@@ -186,9 +186,7 @@ func TestMax(t *testing.T) {
 	assert.NotNil(t, maxEmployer)
 	assert.Equal(t, 3, maxEmployer.ID)
 
-	max, err := From([]int{}).Max(func(max, elem int) bool {
-		return max < elem
-	})
+	max, err := From([]int{}).Max(MaxInt)
 	assert.NoError(t, err)
 	assert.Nil(t, max)
 }
