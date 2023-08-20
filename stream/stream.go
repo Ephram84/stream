@@ -3,7 +3,7 @@ package stream
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -19,7 +19,13 @@ func (s *stream[T]) setError(err error) {
 }
 
 func FromFile(path string) *stream[string] {
-	input, err := ioutil.ReadFile(path)
+	f, err := os.Open(path)
+	if err != nil {
+		return &stream[string]{
+			err: err,
+		}
+	}
+	input, err := io.ReadAll(f)
 	if err != nil {
 		return &stream[string]{
 			err: err,
