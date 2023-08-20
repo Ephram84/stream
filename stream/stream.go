@@ -370,6 +370,17 @@ func (s *stream[T]) ToArray() ([]T, error) {
 	return array, nil
 }
 
+func (s *stream[T]) ToSortedArray(sortFunc func(array []T) func(i, j int) bool) ([]T, error) {
+	array, err := s.ToArray()
+	if err != nil {
+		return nil, s.err
+	}
+
+	sort.Slice(array, sortFunc(array))
+
+	return array, nil
+}
+
 func (s *stream[T]) Write(writer io.Writer) (int, error) {
 	slice, err := s.ToArray()
 	if err != nil {

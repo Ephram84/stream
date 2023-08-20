@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -236,4 +237,11 @@ type Account struct {
 type Transaction struct {
 	ID     string
 	Amount float64
+}
+
+func TestSort(t *testing.T) {
+	numbers := []int{5, 3, 1, 2, 4}
+	result, err := From(numbers).ToSortedArray(SortInts)
+	assert.NoError(t, err)
+	assert.True(t, sort.IntsAreSorted(result))
 }
