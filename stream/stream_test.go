@@ -190,3 +190,50 @@ func TestMax(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, max)
 }
+
+func TestMapSlice(t *testing.T) {
+	accounts := []Account{
+		{
+			Transactions: []Transaction{
+				{
+					ID:     "1",
+					Amount: 120.0,
+				},
+				{
+					ID:     "2",
+					Amount: -120.0,
+				},
+			},
+		},
+		{
+			Transactions: []Transaction{
+				{
+					ID:     "3",
+					Amount: 20.0,
+				},
+				{
+					ID:     "4",
+					Amount: 10.0,
+				},
+			},
+		},
+	}
+
+	numberOfTransactions, err := MapSlice[Account, Transaction](From(accounts), func(elem Account) ([]Transaction, error) {
+		return elem.Transactions, nil
+	}).Filter(func(elem Transaction) (bool, error) {
+		return elem.Amount > 0.0, nil
+	}).Count()
+	assert.NoError(t, err)
+	assert.Equal(t, 3, numberOfTransactions)
+}
+
+type Account struct {
+	ID           string
+	Transactions []Transaction
+}
+
+type Transaction struct {
+	ID     string
+	Amount float64
+}

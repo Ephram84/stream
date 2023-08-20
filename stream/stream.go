@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"sort"
 	"strings"
+	"sync"
 )
 
 type stream[T any] struct {
@@ -233,6 +235,41 @@ func Map[T1, T2 any](s *stream[T1], mapper func(elem T1) (T2, error)) *stream[T2
 				out <- newElem
 			}
 		}
+		close(out)
+	}()
+
+	return newStream
+}
+
+func MapSlice[T1, T2 any](s *stream[T1], mapper func(elem T1) ([]T2, error)) *stream[T2] {
+	if s.err != nil {
+		return &stream[T2]{
+			err: s.err,
+		}
+	}
+
+	out := make(chan T2, 1)
+	newStream := &stream[T2]{
+		stream: out,
+	}
+
+	go func() {
+		wg := &sync.WaitGroup{}
+		for elem := range s.stream {
+			newElems, err := mapper(elem)
+			if err != nil {
+				newStream.setError(err)
+			} else {
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					defer wg.Done()
+					for idx := range newElems {
+						out <- newElems[idx]
+					}
+				}(wg)
+			}
+		}
+		wg.Wait()
 		close(out)
 	}()
 
