@@ -144,7 +144,7 @@ func TestPartitionBy(t *testing.T) {
 }
 
 func TestGroupBy(t *testing.T) {
-	groupByAlphabet, err := From(sliceEmployee).GroupBy(func(elem Employee) string {
+	groupByAlphabet, err := From(sliceEmployee).GroupByString(func(elem Employee) string {
 		return elem.Name[0:1]
 	}).ToMap()
 	assert.NoError(t, err)
@@ -161,8 +161,16 @@ func TestMapToNewType(t *testing.T) {
 	assert.Equal(t, lengthOfNames, []int{10, 10, 15})
 }
 
+func TestMapToInt(t *testing.T) {
+	lengthOfNames, err := From(sliceEmployee).MapToInt(func(elem Employee) (int, error) {
+		return len(elem.Name), nil
+	}).ToArray()
+	assert.NoError(t, err)
+	assert.Equal(t, lengthOfNames, []int{10, 10, 15})
+}
+
 func TestWordCount(t *testing.T) {
-	wordCount, err := FromFile("../assets/words.txt").GroupBy(mapper).Reducing(reducer)
+	wordCount, err := FromFile("../assets/words.txt").GroupByString(mapper).Reducing(reducer)
 	assert.NoError(t, err)
 
 	for word, count := range wordCount {

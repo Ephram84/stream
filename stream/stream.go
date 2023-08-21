@@ -142,7 +142,7 @@ func (s *stream[T]) PartitioningBy(predicate func(elem T) (bool, error)) *stream
 	return newStream
 }
 
-func (s *stream[T]) GroupBy(grouper func(elem T) string) *streamM[string, T] {
+func (s *stream[T]) GroupByString(grouper func(elem T) string) *streamM[string, T] {
 	if s.err != nil {
 		return &streamM[string, T]{
 			err: s.err,
@@ -161,6 +161,75 @@ func (s *stream[T]) GroupBy(grouper func(elem T) string) *streamM[string, T] {
 	}()
 
 	return &streamM[string, T]{
+		stream: out,
+	}
+}
+
+func (s *stream[T]) GroupByInt(grouper func(elem T) int) *streamM[int, T] {
+	if s.err != nil {
+		return &streamM[int, T]{
+			err: s.err,
+		}
+	}
+
+	out := make(chan pair[int, T], 1)
+	go func() {
+		for elem := range s.stream {
+			out <- pair[int, T]{
+				key:   grouper(elem),
+				value: elem,
+			}
+		}
+		close(out)
+	}()
+
+	return &streamM[int, T]{
+		stream: out,
+	}
+}
+
+func (s *stream[T]) GroupByInt64(grouper func(elem T) int64) *streamM[int64, T] {
+	if s.err != nil {
+		return &streamM[int64, T]{
+			err: s.err,
+		}
+	}
+
+	out := make(chan pair[int64, T], 1)
+	go func() {
+		for elem := range s.stream {
+			out <- pair[int64, T]{
+				key:   grouper(elem),
+				value: elem,
+			}
+		}
+		close(out)
+	}()
+
+	return &streamM[int64, T]{
+		stream: out,
+	}
+}
+
+func (s *stream[T]) GroupByFloat(grouper func(elem T) float64) *streamM[float64, T] {
+	if s.err != nil {
+		return &streamM[float64, T]{
+			err: s.err,
+		}
+	}
+
+	out := make(chan pair[float64, T], 1)
+	go func() {
+		for elem := range s.stream {
+			out <- pair[float64, T]{
+				key:   grouper(elem),
+				value: elem,
+			}
+		}
+		close(out)
+	}()
+
+	return &streamM[float64, T]{
 		stream: out,
 	}
 }

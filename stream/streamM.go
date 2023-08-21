@@ -1,7 +1,7 @@
 package stream
 
 type Key interface {
-	int64 | float64 | string | bool
+	int | int64 | float64 | string | bool
 }
 
 type pair[K Key, V any] struct {
