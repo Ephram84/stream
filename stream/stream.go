@@ -59,22 +59,6 @@ func From[T any](tokens []T, sizes ...int) *stream[T] {
 	}
 }
 
-func Range(start, end int) *stream[int] {
-	out := make(chan int, 1)
-
-	go func() {
-		for i := start; i < end; i++ {
-			out <- i
-		}
-		close(out)
-	}()
-
-	return &stream[int]{
-		stream: out,
-		size:   1,
-	}
-}
-
 func (s *stream[T]) WithSize(size int) *stream[T] {
 	s.size = size
 	return s
