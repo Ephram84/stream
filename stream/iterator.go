@@ -2,12 +2,12 @@ package stream
 
 type iterator struct {
 	start int
-	next  func(prev int) int
+	next  func(current int) int
 	skip  int
 	limit int
 }
 
-func Iterator(start int, next func(prev int) int) *iterator {
+func Iterator(start int, next func(current int) int) *iterator {
 	return &iterator{
 		start: start,
 		next:  next,
@@ -31,8 +31,9 @@ func (i *iterator) WithLimit(limit int) *iterator {
 	return i
 }
 
-func (i *iterator) ToStream() *stream[int] {
-	out := make(chan int, 1)
+func (i *iterator) ToStream(sizes ...int) *stream[int] {
+	size := getSize(sizes)
+	out := make(chan int, size)
 
 	go func() {
 		current := i.start
@@ -50,5 +51,6 @@ func (i *iterator) ToStream() *stream[int] {
 
 	return &stream[int]{
 		stream: out,
+		size:   size,
 	}
 }
