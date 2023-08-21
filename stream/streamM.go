@@ -12,6 +12,7 @@ type pair[K Key, V any] struct {
 type streamM[K Key, V any] struct {
 	stream chan pair[K, V]
 	err    error
+	size   int
 }
 
 func (s *streamM[K, V]) setError(err error) {
@@ -21,7 +22,7 @@ func (s *streamM[K, V]) setError(err error) {
 }
 
 func (m *streamM[K, V]) StreamKeys() *stream[K] {
-	out := make(chan K, 1)
+	out := make(chan K, m.size)
 
 	go func() {
 		for pair := range m.stream {
@@ -32,11 +33,12 @@ func (m *streamM[K, V]) StreamKeys() *stream[K] {
 
 	return &stream[K]{
 		stream: out,
+		size:   m.size,
 	}
 }
 
 func (m *streamM[K, V]) FlatMapValues() *stream[V] {
-	out := make(chan V, 1)
+	out := make(chan V, m.size)
 
 	go func() {
 		for pair := range m.stream {
@@ -47,6 +49,7 @@ func (m *streamM[K, V]) FlatMapValues() *stream[V] {
 
 	return &stream[V]{
 		stream: out,
+		size:   m.size,
 	}
 }
 

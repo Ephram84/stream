@@ -12,6 +12,7 @@ import (
 type stream[T any] struct {
 	stream chan T
 	err    error
+	size   int
 }
 
 func (s *stream[T]) setError(err error) {
@@ -20,17 +21,19 @@ func (s *stream[T]) setError(err error) {
 	}
 }
 
-func FromFile(path string) *stream[string] {
+func FromFile(path string, sizes ...int) *stream[string] {
 	f, err := os.Open(path)
 	if err != nil {
 		return &stream[string]{
-			err: err,
+			err:  err,
+			size: getSize(sizes),
 		}
 	}
 	input, err := io.ReadAll(f)
 	if err != nil {
 		return &stream[string]{
-			err: err,
+			err:  err,
+			size: getSize(sizes),
 		}
 	}
 
@@ -38,8 +41,10 @@ func FromFile(path string) *stream[string] {
 	return From(fields)
 }
 
-func From[T any](tokens []T) *stream[T] {
-	out := make(chan T, 1)
+func From[T any](tokens []T, sizes ...int) *stream[T] {
+	size := getSize(sizes)
+
+	out := make(chan T, size)
 
 	go func() {
 		for idx := range tokens {
@@ -50,6 +55,7 @@ func From[T any](tokens []T) *stream[T] {
 
 	return &stream[T]{
 		stream: out,
+		size:   size,
 	}
 }
 
@@ -65,7 +71,13 @@ func Range(start, end int) *stream[int] {
 
 	return &stream[int]{
 		stream: out,
+		size:   1,
 	}
+}
+
+func (s *stream[T]) WithSize(size int) *stream[T] {
+	s.size = size
+	return s
 }
 
 func (s *stream[T]) Filter(filter func(elem T) (bool, error)) *stream[T] {
@@ -73,7 +85,7 @@ func (s *stream[T]) Filter(filter func(elem T) (bool, error)) *stream[T] {
 		return s
 	}
 
-	out := make(chan T, 1)
+	out := make(chan T, s.size)
 
 	go func() {
 		for elem := range s.stream {
@@ -91,6 +103,7 @@ func (s *stream[T]) Filter(filter func(elem T) (bool, error)) *stream[T] {
 	return &stream[T]{
 		stream: out,
 		err:    s.err,
+		size:   s.size,
 	}
 }
 
@@ -99,7 +112,7 @@ func (s *stream[T]) ForEach(f func(elem T) T) *stream[T] {
 		return s
 	}
 
-	out := make(chan T, 1)
+	out := make(chan T, s.size)
 
 	go func() {
 		for elem := range s.stream {
@@ -111,6 +124,7 @@ func (s *stream[T]) ForEach(f func(elem T) T) *stream[T] {
 	return &stream[T]{
 		stream: out,
 		err:    s.err,
+		size:   s.size,
 	}
 }
 
@@ -121,9 +135,10 @@ func (s *stream[T]) PartitioningBy(predicate func(elem T) (bool, error)) *stream
 		}
 	}
 
-	out := make(chan pair[bool, T], 1)
+	out := make(chan pair[bool, T], s.size)
 	newStream := &streamM[bool, T]{
 		stream: out,
+		size:   s.size,
 	}
 	go func() {
 		for elem := range s.stream {
@@ -149,7 +164,7 @@ func (s *stream[T]) GroupByString(grouper func(elem T) string) *streamM[string, 
 		}
 	}
 
-	out := make(chan pair[string, T], 1)
+	out := make(chan pair[string, T], s.size)
 	go func() {
 		for elem := range s.stream {
 			out <- pair[string, T]{
@@ -162,6 +177,7 @@ func (s *stream[T]) GroupByString(grouper func(elem T) string) *streamM[string, 
 
 	return &streamM[string, T]{
 		stream: out,
+		size:   s.size,
 	}
 }
 
@@ -172,7 +188,7 @@ func (s *stream[T]) GroupByInt(grouper func(elem T) int) *streamM[int, T] {
 		}
 	}
 
-	out := make(chan pair[int, T], 1)
+	out := make(chan pair[int, T], s.size)
 	go func() {
 		for elem := range s.stream {
 			out <- pair[int, T]{
@@ -185,6 +201,7 @@ func (s *stream[T]) GroupByInt(grouper func(elem T) int) *streamM[int, T] {
 
 	return &streamM[int, T]{
 		stream: out,
+		size:   s.size,
 	}
 }
 
@@ -195,7 +212,7 @@ func (s *stream[T]) GroupByInt64(grouper func(elem T) int64) *streamM[int64, T] 
 		}
 	}
 
-	out := make(chan pair[int64, T], 1)
+	out := make(chan pair[int64, T], s.size)
 	go func() {
 		for elem := range s.stream {
 			out <- pair[int64, T]{
@@ -208,6 +225,7 @@ func (s *stream[T]) GroupByInt64(grouper func(elem T) int64) *streamM[int64, T] 
 
 	return &streamM[int64, T]{
 		stream: out,
+		size:   s.size,
 	}
 }
 
@@ -218,7 +236,7 @@ func (s *stream[T]) GroupByFloat(grouper func(elem T) float64) *streamM[float64,
 		}
 	}
 
-	out := make(chan pair[float64, T], 1)
+	out := make(chan pair[float64, T], s.size)
 	go func() {
 		for elem := range s.stream {
 			out <- pair[float64, T]{
@@ -231,19 +249,21 @@ func (s *stream[T]) GroupByFloat(grouper func(elem T) float64) *streamM[float64,
 
 	return &streamM[float64, T]{
 		stream: out,
+		size:   s.size,
 	}
 }
 
 func (s *stream[T]) MapToFloat(m func(elem T) (float64, error)) *stream[float64] {
 	newStream := &stream[float64]{
-		err: s.err,
+		err:  s.err,
+		size: s.size,
 	}
 
 	if s.err != nil {
 		return newStream
 	}
 
-	out := make(chan float64, 1)
+	out := make(chan float64, s.size)
 	newStream.stream = out
 	go func() {
 		for elem := range s.stream {
@@ -261,14 +281,15 @@ func (s *stream[T]) MapToFloat(m func(elem T) (float64, error)) *stream[float64]
 
 func (s *stream[T]) MapToInt(m func(elem T) (int, error)) *stream[int] {
 	newStream := &stream[int]{
-		err: s.err,
+		err:  s.err,
+		size: s.size,
 	}
 
 	if s.err != nil {
 		return newStream
 	}
 
-	out := make(chan int, 1)
+	out := make(chan int, s.size)
 	newStream.stream = out
 	go func() {
 		for elem := range s.stream {
@@ -291,9 +312,10 @@ func Map[T1, T2 any](s *stream[T1], mapper func(elem T1) (T2, error)) *stream[T2
 		}
 	}
 
-	out := make(chan T2, 1)
+	out := make(chan T2, s.size)
 	newStream := &stream[T2]{
 		stream: out,
+		size:   s.size,
 	}
 
 	go func() {
@@ -317,9 +339,10 @@ func MapSlice[T1, T2 any](s *stream[T1], mapper func(elem T1) ([]T2, error)) *st
 		}
 	}
 
-	out := make(chan T2, 1)
+	out := make(chan T2, s.size)
 	newStream := &stream[T2]{
 		stream: out,
+		size:   s.size,
 	}
 
 	go func() {

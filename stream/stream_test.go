@@ -228,7 +228,7 @@ func TestMapSlice(t *testing.T) {
 		},
 	}
 
-	numberOfTransactions, err := MapSlice[Account, Transaction](From(accounts), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := MapSlice[Account, Transaction](From(accounts, len(accounts)), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
