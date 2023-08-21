@@ -2,12 +2,12 @@ package stream
 
 type iterator struct {
 	start int
-	next  func(prev int) int
+	next  func(current int) int
 	skip  int
 	limit int
 }
 
-func Iterator(start int, next func(prev int) int) *iterator {
+func Iterator(start int, next func(current int) int) *iterator {
 	return &iterator{
 		start: start,
 		next:  next,
