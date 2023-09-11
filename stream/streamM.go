@@ -72,17 +72,39 @@ func (m *streamM[K, V]) ToMap() (map[K][]V, error) {
 	return result, nil
 }
 
-func (m *streamM[K, V]) Reducing(reducer func(key K, values []V) (K, V)) (map[K]V, error) {
+func Reducing[K Key, V1, V2 any](m *streamM[K, V1], reducer func(key K, values []V1) (K, V2)) (map[K]V2, error) {
 	aggregatedMap, err := m.ToMap()
 	if err != nil {
 		return nil, m.err
 	}
 
-	result := map[K]V{}
+	result := map[K]V2{}
 	for key, values := range aggregatedMap {
 		nKey, nValue := reducer(key, values)
 		result[nKey] = nValue
 	}
 
 	return result, nil
+}
+
+func (m *streamM[K, V]) ForEach(f func(key K, valie V) (K, V)) *streamM[K, V] {
+	out := make(chan pair[K, V], m.size)
+	newStream := &streamM[K, V]{
+		stream: out,
+		size:   m.size,
+		err:    m.err,
+	}
+
+	go func() {
+		for p := range m.stream {
+			newKey, newValue := f(p.key, p.value)
+			out <- pair[K, V]{
+				key:   newKey,
+				value: newValue,
+			}
+		}
+		close(out)
+	}()
+
+	return newStream
 }

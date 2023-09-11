@@ -526,3 +526,39 @@ func (s *stream[T]) Min(comparator func(min, elem T) bool) (*T, error) {
 		return &min, nil
 	}
 }
+
+func (s *stream[T]) Sum(m func(elem T) (float64, error)) (float64, error) {
+	if s.err != nil {
+		return 0, s.err
+	}
+
+	sum := 0.0
+	for elem := range s.stream {
+		val, err := m(elem)
+		if err != nil {
+			return 0, err
+		}
+		sum += val
+	}
+
+	return sum, nil
+}
+
+func (s *stream[T]) Avg(m func(elem T) (float64, error)) (float64, error) {
+	if s.err != nil {
+		return 0, s.err
+	}
+
+	sum := 0.0
+	count := 0
+	for elem := range s.stream {
+		val, err := m(elem)
+		if err != nil {
+			return 0, err
+		}
+		sum += val
+		count++
+	}
+
+	return sum / float64(count), nil
+}

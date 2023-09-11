@@ -5,9 +5,9 @@ import (
 	"os"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -170,7 +170,7 @@ func TestMapToInt(t *testing.T) {
 }
 
 func TestWordCount(t *testing.T) {
-	wordCount, err := FromFile("../assets/words.txt").GroupByString(mapper).Reducing(reducer)
+	wordCount, err := Reducing[string, string, int](FromFile("../assets/words.txt").GroupByString(mapper), reducer)
 	assert.NoError(t, err)
 
 	for word, count := range wordCount {
@@ -183,8 +183,8 @@ func mapper(word string) string {
 	return isWord.FindString(strings.ToLower(word))
 }
 
-func reducer(key string, values []string) (string, string) {
-	return key, strconv.Itoa(len(values))
+func reducer(key string, values []string) (string, int) {
+	return key, len(values)
 }
 
 func TestMax(t *testing.T) {
@@ -237,14 +237,27 @@ func TestMapSlice(t *testing.T) {
 	assert.Equal(t, 3, numberOfTransactions)
 }
 
+func TestMapSliceWithEmptyAccounts(t *testing.T) {
+	accounts := []Account{}
+
+	numberOfTransactions, err := MapSlice[Account, Transaction](From(accounts, len(accounts)), func(elem Account) ([]Transaction, error) {
+		return elem.Transactions, nil
+	}).Filter(func(elem Transaction) (bool, error) {
+		return elem.Amount > 0.0, nil
+	}).Count()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, numberOfTransactions)
+}
+
 type Account struct {
 	ID           string
 	Transactions []Transaction
 }
 
 type Transaction struct {
-	ID     string
-	Amount float64
+	ID          string
+	Amount      float64
+	BookingDate int64
 }
 
 func TestSort(t *testing.T) {
@@ -252,4 +265,69 @@ func TestSort(t *testing.T) {
 	result, err := From(numbers).ToSortedArray(SortInts)
 	assert.NoError(t, err)
 	assert.True(t, sort.IntsAreSorted(result))
+}
+
+func TestWithNils(t *testing.T) {
+	accounts := []*Account{
+		{},
+		nil,
+		{},
+	}
+	n, err := From(accounts).Filter(func(elem *Account) (bool, error) {
+		return elem != nil, nil
+	}).Count()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, n)
+}
+
+func TestSum(t *testing.T) {
+	numbers := []int{5, 3, 1, 2, 4}
+	result, err := From(numbers).Sum(func(elem int) (float64, error) {
+		return float64(elem), nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 15.0, result)
+}
+
+func TestAvg(t *testing.T) {
+	numbers := []int{5, 3, 1, 2, 4}
+	result, err := From(numbers).Avg(func(elem int) (float64, error) {
+		return float64(elem), nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3.0, result)
+}
+
+func TestReducingToFloat(t *testing.T) {
+	transactions := []Transaction{
+		{
+			Amount:      10.0,
+			BookingDate: time.Date(2023, time.September, 9, 0, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			Amount:      15.0,
+			BookingDate: time.Date(2023, time.September, 9, 0, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			Amount:      150.0,
+			BookingDate: time.Date(2023, time.August, 20, 0, 0, 0, 0, time.UTC).Unix(),
+		},
+	}
+
+	result, err := Reducing[string, Transaction, float64](From(transactions).GroupByString(func(elem Transaction) string {
+		date := time.Unix(elem.BookingDate, 0)
+		return fmt.Sprintf("%d-%d", date.Year(), int(date.Month()))
+	}), func(key string, values []Transaction) (string, float64) {
+		sum := 0.0
+		for _, trans := range values {
+			sum += trans.Amount
+		}
+
+		return key, sum
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]float64{
+		"2023-9": 25.0,
+		"2023-8": 150.0,
+	}, result)
 }
