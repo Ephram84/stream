@@ -183,8 +183,8 @@ func mapper(word string) string {
 	return isWord.FindString(strings.ToLower(word))
 }
 
-func reducer(key string, values []string) (string, int) {
-	return key, len(values)
+func reducer(key string, values []string) (string, int, error) {
+	return key, len(values), nil
 }
 
 func TestMax(t *testing.T) {
@@ -317,13 +317,13 @@ func TestReducingToFloat(t *testing.T) {
 	result, err := Reducing[string, Transaction, float64](From(transactions).GroupByString(func(elem Transaction) string {
 		date := time.Unix(elem.BookingDate, 0)
 		return fmt.Sprintf("%d-%d", date.Year(), int(date.Month()))
-	}), func(key string, values []Transaction) (string, float64) {
+	}), func(key string, values []Transaction) (string, float64, error) {
 		sum := 0.0
 		for _, trans := range values {
 			sum += trans.Amount
 		}
 
-		return key, sum
+		return key, sum, nil
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]float64{
