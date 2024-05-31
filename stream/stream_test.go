@@ -5,7 +5,6 @@ import (
 	"os"
 	"regexp"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
@@ -37,7 +36,7 @@ var sliceEmployee = []Employee{
 }
 
 func TestWords(t *testing.T) {
-	words, err := FromFile("../assets/words.txt").ForEach(changer).Filter(filter).ToArray()
+	words, err := FromFile("../assets/words.txt").Map(changer).Filter(filter).ToSlice()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,8 +51,8 @@ func TestWords(t *testing.T) {
 
 var isWord = regexp.MustCompile(`[A-Za-z]+`)
 
-func changer(word string) string {
-	return isWord.FindString(word)
+func changer(word string) (string, error) {
+	return isWord.FindString(word), nil
 }
 
 func filter(word string) (bool, error) {
@@ -63,7 +62,7 @@ func filter(word string) (bool, error) {
 func TestSlice(t *testing.T) {
 	ints, err := From([][]int{{0, 1, 2}, {3, 4, 5}, {6}}).
 		Filter(func(ints []int) (bool, error) { return len(ints) > 1, nil }).
-		ToArray()
+		ToSlice()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +106,7 @@ func TestWrite(t *testing.T) {
 func TestFindFirst(t *testing.T) {
 	employee, err := From(sliceEmployee).Filter(func(elem Employee) (bool, error) {
 		return elem.Salary > 100000.0, nil
-	}).FindFirst()
+	}).First()
 	assert.NoError(t, err)
 
 	assert.NotNil(t, employee)
@@ -118,7 +117,7 @@ func TestFindFirst(t *testing.T) {
 func TestFindFirstOrElse(t *testing.T) {
 	employee, err := From(sliceEmployee).Filter(func(elem Employee) (bool, error) {
 		return elem.Salary > 1000000.0, nil
-	}).FindFirst(Employee{Name: "John Doe"})
+	}).First(Employee{Name: "John Doe"})
 	assert.NoError(t, err)
 
 	assert.Equal(t, employee.Name, "John Doe")
@@ -126,9 +125,9 @@ func TestFindFirstOrElse(t *testing.T) {
 }
 
 func TestMapToFloat64(t *testing.T) {
-	salaries, err := From(sliceEmployee).MapToFloat(func(elem Employee) (float64, error) {
+	salaries, err := From(sliceEmployee).MapToFloat64(func(elem Employee) (float64, error) {
 		return elem.Salary, nil
-	}).ToArray()
+	}).ToSlice()
 	assert.NoError(t, err)
 
 	assert.Equal(t, []float64{100000.0, 200000.0, 300000.0}, salaries)
@@ -153,54 +152,38 @@ func TestGroupBy(t *testing.T) {
 	assert.Equal(t, groupByAlphabet["M"][0].Name, "Mark Zuckerberg")
 }
 
-func TestMapToNewType(t *testing.T) {
-	lengthOfNames, err := Map(From(sliceEmployee), func(elem Employee) (int, error) {
-		return len(elem.Name), nil
-	}).ToArray()
-	assert.NoError(t, err)
-	assert.Equal(t, lengthOfNames, []int{10, 10, 15})
-}
-
 func TestMapToInt(t *testing.T) {
 	lengthOfNames, err := From(sliceEmployee).MapToInt(func(elem Employee) (int, error) {
 		return len(elem.Name), nil
-	}).ToArray()
+	}).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, lengthOfNames, []int{10, 10, 15})
 }
 
-func TestWordCount(t *testing.T) {
-	wordCount, err := Reducing[string, string, int](FromFile("../assets/words.txt").GroupByString(mapper), reducer)
-	assert.NoError(t, err)
-
-	for word, count := range wordCount {
-		fmt.Println(word, count)
-	}
-	fmt.Println(len(wordCount))
-}
-
-func mapper(word string) string {
-	return isWord.FindString(strings.ToLower(word))
-}
-
-func reducer(key string, values []string) (string, int, error) {
-	return key, len(values), nil
-}
-
 func TestMax(t *testing.T) {
-	maxEmployer, err := From(sliceEmployee).Max(func(max, elem Employee) bool {
+	maxEmployer, err := From(sliceEmployee).Reduce(Employee{}, Max(func(max, elem Employee) bool {
 		return max.Salary < elem.Salary
-	})
+	}))
 	assert.NoError(t, err)
 	assert.NotNil(t, maxEmployer)
 	assert.Equal(t, 3, maxEmployer.ID)
-
-	max, err := From([]int{}).Max(MaxInt)
-	assert.NoError(t, err)
-	assert.Nil(t, max)
 }
 
-func TestMapSlice(t *testing.T) {
+func TestFlatMapInts(t *testing.T) {
+	intSlice := [][]int{
+		{1, 2, 3},
+		{4, 5, 6},
+		{7, 8, 9},
+	}
+
+	ints, err := FlatMap(intSlice, func(elem []int) ([]int, error) {
+		return elem, nil
+	}).ToSlice()
+	assert.NoError(t, err)
+	assert.Equal(t, []int{1, 2, 3, 4, 5, 6, 7, 8, 9}, ints)
+}
+
+func TestFlatMap(t *testing.T) {
 	accounts := []Account{
 		{
 			Transactions: []Transaction{
@@ -228,7 +211,7 @@ func TestMapSlice(t *testing.T) {
 		},
 	}
 
-	numberOfTransactions, err := MapSlice[Account, Transaction](From(accounts, len(accounts)), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMap(accounts, func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
@@ -237,10 +220,10 @@ func TestMapSlice(t *testing.T) {
 	assert.Equal(t, 3, numberOfTransactions)
 }
 
-func TestMapSliceWithEmptyAccounts(t *testing.T) {
+func TestFlatMapWithEmptyAccounts(t *testing.T) {
 	accounts := []Account{}
 
-	numberOfTransactions, err := MapSlice[Account, Transaction](From(accounts, len(accounts)), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMap(accounts, func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
@@ -262,7 +245,7 @@ type Transaction struct {
 
 func TestSort(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).ToSortedArray(SortInts)
+	result, err := From(numbers).Sort(SortInts).ToSlice()
 	assert.NoError(t, err)
 	assert.True(t, sort.IntsAreSorted(result))
 }
@@ -282,18 +265,14 @@ func TestWithNils(t *testing.T) {
 
 func TestSum(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).Sum(func(elem int) (float64, error) {
-		return float64(elem), nil
-	})
+	result, err := From(numbers).Reduce(0, Sum[int]())
 	assert.NoError(t, err)
-	assert.Equal(t, 15.0, result)
+	assert.Equal(t, 15, result)
 }
 
 func TestAvg(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).Avg(func(elem int) (float64, error) {
-		return float64(elem), nil
-	})
+	result, err := From(numbers).MapToFloat64(IntToFloat64).Reduce(0.0, Avg())
 	assert.NoError(t, err)
 	assert.Equal(t, 3.0, result)
 }
@@ -314,17 +293,10 @@ func TestReducingToFloat(t *testing.T) {
 		},
 	}
 
-	result, err := Reducing[string, Transaction, float64](From(transactions).GroupByString(func(elem Transaction) string {
+	result, err := From(transactions).GroupByString(func(elem Transaction) string {
 		date := time.Unix(elem.BookingDate, 0)
 		return fmt.Sprintf("%d-%d", date.Year(), int(date.Month()))
-	}), func(key string, values []Transaction) (string, float64, error) {
-		sum := 0.0
-		for _, trans := range values {
-			sum += trans.Amount
-		}
-
-		return key, sum, nil
-	})
+	}).MapToFloat64(func(elem Transaction) (float64, error) { return elem.Amount, nil }).Reduce(0.0, Sum[float64]()).ToMap()
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]float64{
 		"2023-9": 25.0,
