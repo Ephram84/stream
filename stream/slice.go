@@ -46,11 +46,19 @@ func FromFile(path string) *slice[string] {
 	return From(fields)
 }
 
-func FlatMap[T1, T2 any](inputSlice []T1, mapper func(elem T1) ([]T2, error)) *slice[T2] {
+func FlatMap[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error)) *slice[T2] {
 	newSlice := &slice[T2]{}
+	if s == nil {
+		return newSlice
+	}
 
-	for idx := range inputSlice {
-		newValues, err := mapper(inputSlice[idx])
+	if s.err != nil {
+		newSlice.setError(s.err)
+		return newSlice
+	}
+
+	for idx := range s.slice {
+		newValues, err := mapper(s.slice[idx])
 		if err != nil {
 			newSlice.setError(err)
 			return newSlice

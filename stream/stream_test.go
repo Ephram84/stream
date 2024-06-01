@@ -176,7 +176,7 @@ func TestFlatMapInts(t *testing.T) {
 		{7, 8, 9},
 	}
 
-	ints, err := FlatMap(intSlice, func(elem []int) ([]int, error) {
+	ints, err := FlatMap(From(intSlice), func(elem []int) ([]int, error) {
 		return elem, nil
 	}).ToSlice()
 	assert.NoError(t, err)
@@ -211,7 +211,7 @@ func TestFlatMap(t *testing.T) {
 		},
 	}
 
-	numberOfTransactions, err := FlatMap(accounts, func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMap(From(accounts), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
@@ -223,7 +223,7 @@ func TestFlatMap(t *testing.T) {
 func TestFlatMapWithEmptyAccounts(t *testing.T) {
 	accounts := []Account{}
 
-	numberOfTransactions, err := FlatMap(accounts, func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMap(From(accounts), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
