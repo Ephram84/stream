@@ -1,21 +1,21 @@
 package stream
 
-type iterator struct {
-	start int
-	next  func(current int) int
+type iterator[N Numbers] struct {
+	start N
+	next  func(current N) N
 	skip  int
 	limit int
 }
 
-func Iterator(start int, next func(current int) int) *iterator {
-	return &iterator{
+func Iterator[N Numbers](start N, next func(current N) N) *iterator[N] {
+	return &iterator[N]{
 		start: start,
 		next:  next,
 		limit: 100,
 	}
 }
 
-func (i *iterator) WithSkip(skip int) *iterator {
+func (i *iterator[N]) WithSkip(skip int) *iterator[N] {
 	if skip > 0 {
 		i.skip = skip
 	}
@@ -23,7 +23,7 @@ func (i *iterator) WithSkip(skip int) *iterator {
 	return i
 }
 
-func (i *iterator) WithLimit(limit int) *iterator {
+func (i *iterator[N]) WithLimit(limit int) *iterator[N] {
 	if limit > 0 {
 		i.limit = limit
 	}
@@ -31,26 +31,20 @@ func (i *iterator) WithLimit(limit int) *iterator {
 	return i
 }
 
-func (i *iterator) ToStream(sizes ...int) *stream[int] {
-	size := getSize(sizes)
-	out := make(chan int, size)
-
-	go func() {
-		current := i.start
-		for i.skip > 0 {
-			current = i.next(current)
-			i.skip--
-		}
-
-		for elem := 0; elem < i.limit; elem++ {
-			out <- current
-			current = i.next(current)
-		}
-		close(out)
-	}()
-
-	return &stream[int]{
-		stream: out,
-		size:   size,
+func (i *iterator[N]) Generate() *slice[N] {
+	slice := &slice[N]{
+		slice: make([]N, 0),
 	}
+	current := i.start
+	for i.skip > 0 {
+		current = i.next(current)
+		i.skip--
+	}
+
+	for elem := 0; elem < i.limit; elem++ {
+		slice.slice = append(slice.slice, current)
+		current = i.next(current)
+	}
+
+	return slice
 }

@@ -20,3 +20,7 @@ func StringToFloat(elem string) (float64, error) {
 func FloatToString(elem float64) (string, error) {
 	return fmt.Sprintf("%g", elem), nil
 }
+
+func IntToFloat64(elem int) (float64, error) {
+	return float64(elem), nil
+}
