@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"sort"
 	"testing"
 	"time"
 
@@ -247,7 +246,7 @@ func TestSort(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
 	result, err := From(numbers).Sort(SortInts).ToSlice()
 	assert.NoError(t, err)
-	assert.True(t, sort.IntsAreSorted(result))
+	assert.Equal(t, []int{1, 2, 3, 4, 5}, result)
 }
 
 func TestWithNils(t *testing.T) {

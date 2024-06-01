@@ -220,7 +220,9 @@ func (s *slice[T]) Sort(sortFunc func(slice []T) func(i, j int) bool) *slice[T] 
 		return s
 	}
 
-	sorted := &slice[T]{}
+	sorted := &slice[T]{
+		slice: make([]T, len(s.slice)),
+	}
 	copy(sorted.slice, s.slice)
 
 	sort.Slice(sorted.slice, sortFunc(sorted.slice))
