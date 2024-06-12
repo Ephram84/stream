@@ -12,11 +12,11 @@ func newPairs[K Key, V any](err error) *pairs[K, V] {
 	}
 }
 
-// func (p *pairs[K, V]) setError(err error) {
-// 	if err != nil && p.err == nil {
-// 		p.err = err
-// 	}
-// }
+func (p *pairs[K, V]) setError(err error) {
+	if err != nil && p.err == nil {
+		p.err = err
+	}
+}
 
 func (p *pairs[K, V]) Flatten() *slice[V] {
 	arr := &slice[V]{
