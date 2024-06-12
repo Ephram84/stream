@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -215,6 +216,24 @@ func mapTo[T1, T2 any](elems []T1, mapper func(elem T1) (T2, error)) ([]T2, erro
 	return slice, nil
 }
 
+func (s *slice[T]) AssociateByString(mapper func(elem T) (string, error)) *pairs[string, T] {
+	p := newPairs[string, T](s.err)
+	if p.err != nil {
+		return p
+	}
+
+	for idx := range s.slice {
+		key, err := mapper(s.slice[idx])
+		p.setError(err)
+		if err != nil {
+			return p
+		}
+		p.m[key] = s.slice[idx]
+	}
+
+	return p
+}
+
 func (s *slice[T]) Sort(sortFunc func(slice []T) func(i, j int) bool) *slice[T] {
 	if s.err != nil {
 		return s
@@ -226,6 +245,18 @@ func (s *slice[T]) Sort(sortFunc func(slice []T) func(i, j int) bool) *slice[T] 
 	sort.Slice(sorted.slice, sortFunc(sorted.slice))
 
 	return sorted
+}
+
+func (s *slice[T]) Distinct(eq func(a, b T) bool) *slice[T] {
+	if s.err != nil {
+		return s
+	}
+
+	distinct := &slice[T]{
+		slice: slices.CompactFunc(s.slice, eq),
+	}
+
+	return distinct
 }
 
 // terminal functions
