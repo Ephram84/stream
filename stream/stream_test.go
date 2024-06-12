@@ -34,41 +34,30 @@ var sliceEmployee = []Employee{
 	},
 }
 
-func TestWords(t *testing.T) {
-	words, err := FromFile("../assets/words.txt").Map(changer).Filter(filter).ToSlice()
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestError(t *testing.T) {
+	numbers := []string{"1", "2", "a", "4"}
+	result, err := From(numbers).MapToInt(StringToInt).Filter(isEven).ToSlice()
+	assert.Error(t, err)
+	assert.Empty(t, result)
+}
 
-	for _, word := range words {
-		if len(word) == 1 {
-			t.Fatal(word)
-		}
-		fmt.Println(word)
-	}
+func TestWords(t *testing.T) {
+	words, err := FromFile("../assets/words.txt").GroupByString(mapper).CountValues().ToMap()
+	assert.NoError(t, err)
+
+	assert.Equal(t, 127, words["a"])
+	assert.Equal(t, 141, words["ac"])
+	assert.Equal(t, 68, words["luctus"])
 }
 
 var isWord = regexp.MustCompile(`[A-Za-z]+`)
-
-func changer(word string) (string, error) {
-	return isWord.FindString(word), nil
-}
-
-func filter(word string) (bool, error) {
-	return len(word) > 1, nil
-}
 
 func TestSlice(t *testing.T) {
 	ints, err := From([][]int{{0, 1, 2}, {3, 4, 5}, {6}}).
 		Filter(func(ints []int) (bool, error) { return len(ints) > 1, nil }).
 		ToSlice()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, slice := range ints {
-		fmt.Println(slice)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, [][]int{{0, 1, 2}, {3, 4, 5}}, ints)
 }
 
 func TestMatch(t *testing.T) {
@@ -97,9 +86,7 @@ func TestWrite(t *testing.T) {
 	numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 	_, err := From(numbers).Write(os.Stdout)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestFindFirst(t *testing.T) {
@@ -137,8 +124,8 @@ func TestPartitionBy(t *testing.T) {
 
 	isEven, err := From(numbers).PartitioningBy(isEven).ToMap()
 	assert.NoError(t, err)
-	assert.Len(t, isEven[true], 4)
-	assert.Len(t, isEven[false], 1)
+	assert.Equal(t, []int{2, 4, 6, 8}, isEven[true])
+	assert.Equal(t, []int{5}, isEven[false])
 }
 
 func TestGroupBy(t *testing.T) {
@@ -159,13 +146,28 @@ func TestMapToInt(t *testing.T) {
 	assert.Equal(t, lengthOfNames, []int{10, 10, 15})
 }
 
+func TestMaxWithInts(t *testing.T) {
+	numbers := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	maxInt, err := From(numbers).Reduce(0, Max(MaxInt))
+	assert.NoError(t, err)
+	assert.Equal(t, 9, maxInt)
+}
+
 func TestMax(t *testing.T) {
 	maxEmployer, err := From(sliceEmployee).Reduce(Employee{}, Max(func(max, elem Employee) bool {
 		return max.Salary < elem.Salary
 	}))
 	assert.NoError(t, err)
-	assert.NotNil(t, maxEmployer)
+	assert.NotEqual(t, Employee{}, maxEmployer)
 	assert.Equal(t, 3, maxEmployer.ID)
+}
+
+func TestMin(t *testing.T) {
+	minEmployer, err := From(sliceEmployee).Reduce(sliceEmployee[2], Min(func(min, elem Employee) bool {
+		return min.Salary > elem.Salary
+	}))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, minEmployer.ID)
 }
 
 func TestFlatMapInts(t *testing.T) {
@@ -240,6 +242,7 @@ type Transaction struct {
 	ID          string
 	Amount      float64
 	BookingDate int64
+	Tags        []string
 }
 
 func TestSort(t *testing.T) {
@@ -247,6 +250,45 @@ func TestSort(t *testing.T) {
 	result, err := From(numbers).Sort(SortInts).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3, 4, 5}, result)
+}
+
+func TestDistinct(t *testing.T) {
+	numbers := []int{5, 5, 3, 1, 1, 2, 4}
+	result, err := From(numbers).Distinct(Eq).ToSlice()
+	assert.NoError(t, err)
+	assert.Equal(t, []int{5, 3, 1, 2, 4}, result)
+}
+
+func TestDistinctObjects(t *testing.T) {
+	transactions := []Transaction{
+		{
+			ID:     "T1",
+			Amount: 12.5,
+		},
+		{
+			ID:     "T1",
+			Amount: 14.5,
+		},
+		{
+			ID:     "T2",
+			Amount: -50.0,
+		},
+	}
+
+	result, err := From(transactions).Distinct(func(a, b Transaction) bool {
+		return a.ID == b.ID
+	}).ToSlice()
+	assert.NoError(t, err)
+	assert.Equal(t, []Transaction{
+		{
+			ID:     "T1",
+			Amount: 12.5,
+		},
+		{
+			ID:     "T2",
+			Amount: -50.0,
+		},
+	}, result)
 }
 
 func TestWithNils(t *testing.T) {
@@ -300,5 +342,41 @@ func TestReducingToFloat(t *testing.T) {
 	assert.Equal(t, map[string]float64{
 		"2023-9": 25.0,
 		"2023-8": 150.0,
+	}, result)
+}
+
+func TestAssociateByString(t *testing.T) {
+	transactions := []Transaction{
+		{
+			ID:     "T01",
+			Amount: 10.0,
+		},
+		{
+			ID:     "T02",
+			Amount: 20.0,
+		},
+		{
+			ID:     "T03",
+			Amount: 30.0,
+		},
+	}
+
+	result, err := From(transactions).AssociateByString(func(elem Transaction) (string, error) {
+		return elem.ID, nil
+	}).ToMap()
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]Transaction{
+		"T01": {
+			ID:     "T01",
+			Amount: 10.0,
+		},
+		"T02": {
+			ID:     "T02",
+			Amount: 20.0,
+		},
+		"T03": {
+			ID:     "T03",
+			Amount: 30.0,
+		},
 	}, result)
 }
