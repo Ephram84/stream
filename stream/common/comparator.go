@@ -1,4 +1,4 @@
-package stream
+package common
 
 func Eq[E comparable](a, b E) bool {
 	return a == b

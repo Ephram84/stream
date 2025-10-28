@@ -7,15 +7,22 @@ import (
 	"slices"
 	"sort"
 	"strings"
-)
 
-type Numbers interface {
-	~int | ~int64 | ~float64
-}
+	"github.com/Ephram84/stream/stream/accumulator"
+	"github.com/Ephram84/stream/stream/common"
+	"github.com/Ephram84/stream/stream/tupel"
+)
 
 type slice[T any] struct {
 	slice []T
 	err   error
+}
+
+func emptySlice[T any]() *slice[T] {
+	return &slice[T]{
+		slice: []T{},
+		err:   nil,
+	}
 }
 
 func From[T any](tokens []T) *slice[T] {
@@ -47,34 +54,14 @@ func FromFile(path string) *slice[string] {
 	return From(fields)
 }
 
-func FlatMap[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error)) *slice[T2] {
-	newSlice := &slice[T2]{}
-	if s == nil {
-		return newSlice
-	}
-
-	if s.err != nil {
-		newSlice.setError(s.err)
-		return newSlice
-	}
-
-	for idx := range s.slice {
-		newValues, err := mapper(s.slice[idx])
-		if err != nil {
-			newSlice.setError(err)
-			return newSlice
-		}
-
-		newSlice.slice = append(newSlice.slice, newValues...)
-	}
-
-	return newSlice
-}
-
 func (a *slice[T]) setError(err error) {
 	if err != nil && a.err == nil {
 		a.err = err
 	}
+}
+
+func (s *slice[T]) AsSequence() *seq[T] {
+	return FromSlice(s.slice, s.err)
 }
 
 func (s *slice[T]) Filter(filter func(elem T) (bool, error)) *slice[T] {
@@ -94,26 +81,12 @@ func (s *slice[T]) Filter(filter func(elem T) (bool, error)) *slice[T] {
 	return &newSlice
 }
 
-func (s *slice[T]) ForEach(action func(elem T)) *slice[T] {
-	if s.err != nil {
-		return s
-	}
-
-	for idx := range s.slice {
-		action(s.slice[idx])
-	}
-
-	return s
-}
-
 func (s *slice[T]) Map(mapper func(elem T) (T, error)) *slice[T] {
 	if s.err != nil {
 		return s
 	}
 
-	newSlice := &slice[T]{
-		slice: make([]T, len(s.slice)),
-	}
+	newSlice := emptySlice[T]()
 
 	for idx := range s.slice {
 		newValue, err := mapper(s.slice[idx])
@@ -124,9 +97,26 @@ func (s *slice[T]) Map(mapper func(elem T) (T, error)) *slice[T] {
 	return newSlice
 }
 
+func (s *slice[T]) MapToInt(mapper func(elem T) (int, error)) *slice[int] {
+	return MapSlice(s, mapper)
+}
+
+func (s *slice[T]) MapToInt64(mapper func(elem T) (int64, error)) *slice[int64] {
+	return MapSlice(s, mapper)
+}
+
+func (s *slice[T]) MapToFloat(mapper func(elem T) (float64, error)) *slice[float64] {
+	return MapSlice(s, mapper)
+}
+
+func (s *slice[T]) MapToString(mapper func(elem T) (string, error)) *slice[string] {
+	return MapSlice(s, mapper)
+}
+
 func (s *slice[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSlice[bool, T] {
-	mapped := newPairsSlice[bool, T](s.err)
-	if mapped.err != nil {
+	mapped := emptyMapWithSlices[bool, T]()
+	if s.err != nil {
+		mapped.setError(s.err)
 		return mapped
 	}
 
@@ -144,8 +134,9 @@ func (s *slice[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSl
 }
 
 func (s *slice[T]) GroupByString(grouper func(elem T) string) *pairsSlice[string, T] {
-	mapped := newPairsSlice[string, T](s.err)
-	if mapped.err != nil {
+	mapped := emptyMapWithSlices[string, T]()
+	if s.err != nil {
+		mapped.setError(s.err)
 		return mapped
 	}
 
@@ -157,68 +148,10 @@ func (s *slice[T]) GroupByString(grouper func(elem T) string) *pairsSlice[string
 	return mapped
 }
 
-func (s *slice[T]) MapToInt(mapper func(elem T) (int, error)) *slice[int] {
-	newSlice := &slice[int]{
-		err: s.err,
-	}
-	if newSlice.err != nil {
-		return newSlice
-	}
-
-	mapped, err := mapTo(s.slice, mapper)
-	newSlice.setError(err)
-	newSlice.slice = mapped
-
-	return newSlice
-}
-
-func (s *slice[T]) MapToInt64(mapper func(elem T) (int64, error)) *slice[int64] {
-	newSlice := &slice[int64]{
-		err: s.err,
-	}
-	if newSlice.err != nil {
-		return newSlice
-	}
-
-	mapped, err := mapTo(s.slice, mapper)
-	newSlice.setError(err)
-	newSlice.slice = mapped
-
-	return newSlice
-}
-
-func (s *slice[T]) MapToFloat64(mapper func(elem T) (float64, error)) *slice[float64] {
-	newSlice := &slice[float64]{
-		err: s.err,
-	}
-	if newSlice.err != nil {
-		return newSlice
-	}
-
-	mapped, err := mapTo(s.slice, mapper)
-	newSlice.setError(err)
-	newSlice.slice = mapped
-
-	return newSlice
-}
-
-func mapTo[T1, T2 any](elems []T1, mapper func(elem T1) (T2, error)) ([]T2, error) {
-	slice := make([]T2, len(elems))
-
-	for idx := range elems {
-		value, err := mapper(elems[idx])
-		if err != nil {
-			return nil, err
-		}
-		slice[idx] = value
-	}
-
-	return slice, nil
-}
-
 func (s *slice[T]) AssociateByString(mapper func(elem T) (string, error)) *pairs[string, T] {
-	p := newPairs[string, T](s.err)
-	if p.err != nil {
+	p := emptyPairs[string, T]()
+	if s.err != nil {
+		p.setError(s.err)
 		return p
 	}
 
@@ -243,10 +176,52 @@ func (s *slice[T]) Sort(sortFunc func(slice []T) func(i, j int) bool) *slice[T] 
 		slice: make([]T, len(s.slice)),
 	}
 	copy(sorted.slice, s.slice)
-
 	sort.Slice(sorted.slice, sortFunc(sorted.slice))
 
 	return sorted
+}
+
+func (s *slice[T]) Take(n int) *slice[T] {
+	if s.err != nil {
+		return s
+	}
+
+	newSlice := emptySlice[T]()
+	if n <= 0 {
+		return newSlice
+	}
+
+	if n >= len(s.slice) {
+		newSlice.slice = append(newSlice.slice, s.slice...)
+	} else {
+		newSlice.slice = append(newSlice.slice, s.slice[:n]...)
+	}
+
+	return newSlice
+}
+
+func (s *slice[T]) Skip(n int) *slice[T] {
+	if s.err != nil {
+		return s
+	}
+
+	newSlice := emptySlice[T]()
+	if n < len(s.slice) {
+		newSlice.slice = append(newSlice.slice, s.slice[n:]...)
+	}
+	return newSlice
+}
+
+func (s *slice[T]) Reverse() *slice[T] {
+	if s.err != nil {
+		return s
+	}
+
+	reversed := emptySlice[T]()
+	for i := len(s.slice) - 1; i >= 0; i-- {
+		reversed.slice = append(reversed.slice, s.slice[i])
+	}
+	return reversed
 }
 
 func (s *slice[T]) Distinct(eq func(a, b T) bool) *slice[T] {
@@ -259,6 +234,22 @@ func (s *slice[T]) Distinct(eq func(a, b T) bool) *slice[T] {
 	}
 
 	return distinct
+}
+
+func (s *slice[T]) Concat(slices ...*slice[T]) *slice[T] {
+	if s.err != nil {
+		return s
+	}
+
+	for _, slice := range slices {
+		if slice.err != nil {
+			s.setError(slice.err)
+			return s
+		}
+		s.slice = append(s.slice, slice.slice...)
+	}
+
+	return s
 }
 
 // terminal functions
@@ -347,6 +338,23 @@ func (s *slice[T]) Last(orElse ...T) (*T, error) {
 	return &s.slice[len(s.slice)-1], nil
 }
 
+func (s *slice[T]) LastOrNil(predicate func(elem T) (bool, error)) (*T, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	for i := len(s.slice) - 1; i >= 0; i-- {
+		result, err := predicate(s.slice[i])
+		if err != nil {
+			return nil, err
+		}
+		if result {
+			return &s.slice[i], nil
+		}
+	}
+
+	return nil, nil
+}
+
 func (s *slice[T]) AnyMatch(predicate func(elem T) (bool, error)) (bool, error) {
 	if s.err != nil {
 		return false, s.err
@@ -404,7 +412,7 @@ func (s *slice[T]) NoneMatch(predicate func(elem T) (bool, error)) (bool, error)
 	return true, nil
 }
 
-func (s *slice[T]) Reduce(identity T, accumulator Accumulator[T]) (T, error) {
+func (s *slice[T]) Reduce(identity T, accumulator accumulator.Accumulator[T]) (T, error) {
 	if s.err != nil {
 		return identity, s.err
 	}
@@ -415,4 +423,110 @@ func (s *slice[T]) Reduce(identity T, accumulator Accumulator[T]) (T, error) {
 	}
 
 	return result, nil
+}
+
+func (s *slice[T]) ForEach(consumer func(elem T) error) error {
+	if s.err != nil {
+		return s.err
+	}
+
+	for idx := range s.slice {
+		if err := consumer(s.slice[idx]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// free functions
+
+func MapSlice[T, R any](s *slice[T], mapper func(elem T) (R, error)) *slice[R] {
+	newSlice := emptySlice[R]()
+	if s == nil {
+		return newSlice
+	}
+
+	if s.err != nil {
+		newSlice.setError(s.err)
+		return newSlice
+	}
+
+	for idx := range s.slice {
+		newValue, err := mapper(s.slice[idx])
+		newSlice.setError(err)
+		newSlice.slice = append(newSlice.slice, newValue)
+	}
+
+	return newSlice
+}
+
+func FlatMapSlice[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error)) *slice[T2] {
+	newSlice := emptySlice[T2]()
+	if s == nil {
+		return newSlice
+	}
+
+	if s.err != nil {
+		newSlice.setError(s.err)
+		return newSlice
+	}
+
+	for idx := range s.slice {
+		newValues, err := mapper(s.slice[idx])
+		if err != nil {
+			newSlice.setError(err)
+			return newSlice
+		}
+
+		newSlice.slice = append(newSlice.slice, newValues...)
+	}
+
+	return newSlice
+}
+
+func ZipSlices[T1, T2 any](s1 *slice[T1], s2 *slice[T2]) *slice[tupel.Tupel[T1, T2]] {
+	newSlice := &slice[tupel.Tupel[T1, T2]]{}
+	if s1 == nil || s2 == nil {
+		return newSlice
+	}
+
+	if s1.err != nil {
+		newSlice.setError(s1.err)
+		return newSlice
+	}
+
+	if s2.err != nil {
+		newSlice.setError(s2.err)
+		return newSlice
+	}
+
+	minLen := common.Min(len(s1.slice), len(s2.slice))
+	for i := range minLen {
+		newSlice.slice = append(newSlice.slice, *tupel.New(s1.slice[i], s2.slice[i]))
+	}
+
+	return newSlice
+}
+
+func GroupBySlice[K common.Key, T any](s *slice[T], keyMapper func(elem T) (K, error)) *pairsSlice[K, T] {
+	pairs := emptyMapWithSlices[K, T]()
+	if s == nil {
+		return pairs
+	}
+	if s.err != nil {
+		pairs.setError(s.err)
+		return pairs
+	}
+
+	for idx := range s.slice {
+		key, err := keyMapper(s.slice[idx])
+		if err != nil {
+			pairs.setError(err)
+			return pairs
+		}
+		pairs.m[key] = append(pairs.m[key], s.slice[idx])
+	}
+
+	return pairs
 }

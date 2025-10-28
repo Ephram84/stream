@@ -1,13 +1,17 @@
-package stream
+package iterator
 
-type iterator[N Numbers] struct {
+import (
+	"github.com/Ephram84/stream/stream/common"
+)
+
+type iterator[N common.Numbers] struct {
 	start N
 	next  func(current N) N
 	skip  int
 	limit int
 }
 
-func Iterator[N Numbers](start N, next func(current N) N) *iterator[N] {
+func Iterator[N common.Numbers](start N, next func(current N) N) *iterator[N] {
 	return &iterator[N]{
 		start: start,
 		next:  next,
@@ -31,10 +35,8 @@ func (i *iterator[N]) WithLimit(limit int) *iterator[N] {
 	return i
 }
 
-func (i *iterator[N]) Generate() *slice[N] {
-	slice := &slice[N]{
-		slice: make([]N, 0),
-	}
+func (i *iterator[N]) Generate() []N {
+	s := make([]N, 0)
 	current := i.start
 	for i.skip > 0 {
 		current = i.next(current)
@@ -42,9 +44,9 @@ func (i *iterator[N]) Generate() *slice[N] {
 	}
 
 	for elem := 0; elem < i.limit; elem++ {
-		slice.slice = append(slice.slice, current)
+		s = append(s, current)
 		current = i.next(current)
 	}
 
-	return slice
+	return s
 }

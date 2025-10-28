@@ -1,12 +1,14 @@
-package stream
+package accumulator
+
+import "github.com/Ephram84/stream/stream/common"
 
 type Accumulator[T any] interface {
 	Apply(partialResult, elem T) T
 }
 
-type sum[N Numbers] struct{}
+type sum[N common.Numbers] struct{}
 
-func Sum[N Numbers]() *sum[N] {
+func Sum[N common.Numbers]() *sum[N] {
 	return &sum[N]{}
 }
 
@@ -14,7 +16,7 @@ func (s *sum[N]) Apply(partialResult, elem N) N {
 	return partialResult + elem
 }
 
-type avg[N Numbers] struct {
+type avg[N common.Numbers] struct {
 	count N
 }
 

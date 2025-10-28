@@ -1,14 +1,27 @@
 package stream
 
-type pairs[K Key, V any] struct {
+import (
+	"maps"
+
+	"github.com/Ephram84/stream/stream/common"
+)
+
+type pairs[K common.Key, V any] struct {
 	m   map[K]V
 	err error
 }
 
-func newPairs[K Key, V any](err error) *pairs[K, V] {
+func emptyPairs[K common.Key, V any]() *pairs[K, V] {
 	return &pairs[K, V]{
 		m:   make(map[K]V),
-		err: err,
+		err: nil,
+	}
+}
+
+func FromMap[K common.Key, V any](m map[K]V) *pairs[K, V] {
+	return &pairs[K, V]{
+		m:   m,
+		err: nil,
 	}
 }
 
@@ -19,12 +32,9 @@ func (p *pairs[K, V]) setError(err error) {
 }
 
 func (p *pairs[K, V]) Flatten() *slice[V] {
-	arr := &slice[V]{
-		slice: make([]V, 0),
-		err:   p.err,
-	}
-
-	if arr.err != nil {
+	arr := emptySlice[V]()
+	if p.err != nil {
+		arr.setError(p.err)
 		return arr
 	}
 
@@ -36,10 +46,11 @@ func (p *pairs[K, V]) Flatten() *slice[V] {
 }
 
 func (p *pairs[K, V]) Keys() *slice[K] {
-	s := &slice[K]{
-		slice: make([]K, len(p.m)),
+	s := emptySlice[K]()
+	if p.err != nil {
+		s.setError(p.err)
+		return s
 	}
-	s.setError(p.err)
 
 	idx := 0
 	for key := range p.m {
@@ -57,9 +68,7 @@ func (p *pairs[K, V]) ToMap() (map[K]V, error) {
 
 	m := make(map[K]V)
 
-	for key, values := range p.m {
-		m[key] = values
-	}
+	maps.Copy(m, p.m)
 
 	return m, nil
 }
@@ -72,14 +81,13 @@ func (p *pairs[K, V]) Count() (int, error) {
 	return len(p.m), nil
 }
 
-func (p *pairs[K, V]) ForEach(action func(key K, value V)) *pairs[K, V] {
+func (p *pairs[K, V]) ForEach(action func(key K, value V)) error {
 	if p.err != nil {
-		return p
+		return p.err
 	}
 
 	for key, value := range p.m {
 		action(key, value)
 	}
-
-	return p
+	return nil
 }

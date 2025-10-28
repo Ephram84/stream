@@ -1,6 +1,6 @@
 module github.com/Ephram84/stream
 
-go 1.21
+go 1.24.1
 
 require github.com/stretchr/testify v1.8.1
 

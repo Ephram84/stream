@@ -1,18 +1,26 @@
 package stream
 
-type Key interface {
-	int | int64 | float64 | string | bool
-}
+import (
+	"github.com/Ephram84/stream/stream/accumulator"
+	"github.com/Ephram84/stream/stream/common"
+)
 
-type pairsSlice[K Key, V any] struct {
+type pairsSlice[K common.Key, V any] struct {
 	m   map[K][]V
 	err error
 }
 
-func newPairsSlice[K Key, V any](err error) *pairsSlice[K, V] {
+func FromMapWithSlices[K common.Key, V any](m map[K][]V) *pairsSlice[K, V] {
+	return &pairsSlice[K, V]{
+		m:   m,
+		err: nil,
+	}
+}
+
+func emptyMapWithSlices[K common.Key, V any]() *pairsSlice[K, V] {
 	return &pairsSlice[K, V]{
 		m:   make(map[K][]V),
-		err: err,
+		err: nil,
 	}
 }
 
@@ -23,9 +31,10 @@ func (p *pairsSlice[K, V]) setError(err error) {
 }
 
 func (m pairsSlice[K, V]) CountValues() *pairs[K, int] {
-	newPairs := newPairs[K, int](m.err)
+	newPairs := emptyPairs[K, int]()
 
 	if newPairs.err != nil {
+		newPairs.setError(m.err)
 		return newPairs
 	}
 
@@ -37,12 +46,9 @@ func (m pairsSlice[K, V]) CountValues() *pairs[K, int] {
 }
 
 func (p *pairsSlice[K, V]) Flatten() *slice[V] {
-	arr := &slice[V]{
-		slice: make([]V, 0),
-		err:   p.err,
-	}
-
-	if arr.err != nil {
+	arr := emptySlice[V]()
+	if p.err != nil {
+		arr.setError(p.err)
 		return arr
 	}
 
@@ -54,10 +60,11 @@ func (p *pairsSlice[K, V]) Flatten() *slice[V] {
 }
 
 func (p *pairsSlice[K, V]) Keys() *slice[K] {
-	s := &slice[K]{
-		slice: make([]K, len(p.m)),
+	s := emptySlice[K]()
+	if p.err != nil {
+		s.setError(p.err)
+		return s
 	}
-	s.setError(p.err)
 
 	idx := 0
 	for key := range p.m {
@@ -69,8 +76,9 @@ func (p *pairsSlice[K, V]) Keys() *slice[K] {
 }
 
 func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *pairsSlice[K, float64] {
-	pairsSlice := newPairsSlice[K, float64](p.err)
+	pairsSlice := emptyMapWithSlices[K, float64]()
 	if pairsSlice.err != nil {
+		pairsSlice.setError(p.err)
 		return pairsSlice
 	}
 
@@ -91,9 +99,10 @@ func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *p
 	return pairsSlice
 }
 
-func (p *pairsSlice[K, V]) Reduce(identity V, accumulator Accumulator[V]) *pairs[K, V] {
-	pairs := newPairs[K, V](p.err)
+func (p *pairsSlice[K, V]) Reduce(identity V, acc accumulator.Accumulator[V]) *pairs[K, V] {
+	pairs := emptyPairs[K, V]()
 	if pairs.err != nil {
+		pairs.setError(p.err)
 		return pairs
 	}
 
@@ -102,11 +111,11 @@ func (p *pairsSlice[K, V]) Reduce(identity V, accumulator Accumulator[V]) *pairs
 		case 0:
 			continue
 		case 1:
-			pairs.m[key] = accumulator.Apply(identity, values[0])
+			pairs.m[key] = acc.Apply(identity, values[0])
 		default:
 			result := identity
 			for idx := range values {
-				result = accumulator.Apply(result, values[idx])
+				result = acc.Apply(result, values[idx])
 			}
 			pairs.m[key] = result
 		}
