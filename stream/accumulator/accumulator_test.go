@@ -1,4 +1,4 @@
-package stream
+package accumulator
 
 import (
 	"testing"
