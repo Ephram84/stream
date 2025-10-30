@@ -6,6 +6,14 @@ A Go package that brings the Kotlin collection and stream feeling to Go – as m
 
 This repository was created out of the desire to use the expressive and functional collection and stream operations known from Kotlin in Go as well. The goal is to make working with data streams and collections in Go more elegant, declarative, and productive.
 
+## Installation
+
+Add the module to your project:
+
+```bash
+go get github.com/Ephram84/stream
+```
+
 ## Features
 
 - Functional stream API for Go
@@ -345,7 +353,7 @@ err := numbers.ForEach(func(x int) error {
 // Prints: Number: 1, Number: 2, Number: 3
 ```
 
-### Fre Funcitons
+### Free Funcitons
 Unfortunately, Go does not allow something like `func (s *slice[T]) Map[R any](mapper func(elem T) (R, error))`. Therefore, there are a few helper functions, where T becomes R
 
 #### `MapSlice[T, R any](s *slice[T], mapper func(elem T) (R, error))`
@@ -398,7 +406,7 @@ package main
 
 import (
     "fmt"
-    "stream/stream"
+    "github.com/Ephram84/stream"
 )
 
 func main() {
@@ -415,26 +423,7 @@ func main() {
     
     fmt.Println(result) // [4, 16, 36]
 }
-
-## Installation
-
-Add the module to your project:
-
-```bash
-go get github.com/Ephram84/stream
 ```
-
-## Package Selection Guide
-
-| Use Case | Recommended Package | Reason |
-|----------|-------------------|--------|
-| Small to medium datasets | `stream/slice` | Eager processing, all operations complete immediately |
-| Large datasets or streams | `stream/sequence` | Lazy processing, memory efficient |
-| Need all results at once | `stream/slice` | Eager evaluation provides complete results |
-| Processing on-demand | `stream/sequence` | Lazy evaluation processes only when needed |
-| Infinite data sources | `stream/sequence` | Iterator-based approach handles infinite streams |
-| File processing (small files) | `stream/slice` | Load entire file and process |
-| File processing (large files) | `stream/sequence` | Process line by line or in chunks |
 
 ## Documentation
 

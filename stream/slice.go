@@ -18,9 +18,9 @@ type slice[T any] struct {
 	err   error
 }
 
-func emptySlice[T any]() *slice[T] {
+func emptySlice[T any](len int) *slice[T] {
 	return &slice[T]{
-		slice: []T{},
+		slice: make([]T, len),
 		err:   nil,
 	}
 }
@@ -54,12 +54,6 @@ func FromFile(path string) *slice[string] {
 	return From(fields)
 }
 
-func (a *slice[T]) setError(err error) {
-	if err != nil && a.err == nil {
-		a.err = err
-	}
-}
-
 func (s *slice[T]) AsSequence() *seq[T] {
 	return FromSlice(s.slice, s.err)
 }
@@ -69,16 +63,19 @@ func (s *slice[T]) Filter(filter func(elem T) (bool, error)) *slice[T] {
 		return s
 	}
 
-	newSlice := slice[T]{}
+	newSlice := emptySlice[T](0)
 	for idx := range s.slice {
 		result, err := filter(s.slice[idx])
-		newSlice.setError(err)
+		if err != nil {
+			newSlice.err = err
+			return newSlice
+		}
 		if result {
 			newSlice.slice = append(newSlice.slice, s.slice[idx])
 		}
 	}
 
-	return &newSlice
+	return newSlice
 }
 
 func (s *slice[T]) Map(mapper func(elem T) (T, error)) *slice[T] {
@@ -86,11 +83,14 @@ func (s *slice[T]) Map(mapper func(elem T) (T, error)) *slice[T] {
 		return s
 	}
 
-	newSlice := emptySlice[T]()
+	newSlice := emptySlice[T](len(s.slice))
 
 	for idx := range s.slice {
 		newValue, err := mapper(s.slice[idx])
-		newSlice.setError(err)
+		if err != nil {
+			newSlice.err = err
+			return newSlice
+		}
 		newSlice.slice[idx] = newValue
 	}
 
@@ -116,14 +116,14 @@ func (s *slice[T]) MapToString(mapper func(elem T) (string, error)) *slice[strin
 func (s *slice[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSlice[bool, T] {
 	mapped := emptyMapWithSlices[bool, T]()
 	if s.err != nil {
-		mapped.setError(s.err)
+		mapped.err = s.err
 		return mapped
 	}
 
 	for idx := range s.slice {
 		key, err := predicate(s.slice[idx])
 		if err != nil {
-			mapped.setError(err)
+			mapped.err = err
 			return mapped
 		}
 
@@ -136,7 +136,7 @@ func (s *slice[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSl
 func (s *slice[T]) GroupByString(grouper func(elem T) string) *pairsSlice[string, T] {
 	mapped := emptyMapWithSlices[string, T]()
 	if s.err != nil {
-		mapped.setError(s.err)
+		mapped.err = s.err
 		return mapped
 	}
 
@@ -151,14 +151,14 @@ func (s *slice[T]) GroupByString(grouper func(elem T) string) *pairsSlice[string
 func (s *slice[T]) AssociateByString(mapper func(elem T) (string, error)) *pairs[string, T] {
 	p := emptyPairs[string, T]()
 	if s.err != nil {
-		p.setError(s.err)
+		p.err = s.err
 		return p
 	}
 
 	for idx := range s.slice {
 		key, err := mapper(s.slice[idx])
-		p.setError(err)
 		if err != nil {
+			p.err = err
 			return p
 		}
 		p.m[key] = s.slice[idx]
@@ -172,9 +172,7 @@ func (s *slice[T]) Sort(sortFunc func(slice []T) func(i, j int) bool) *slice[T] 
 		return s
 	}
 
-	sorted := &slice[T]{
-		slice: make([]T, len(s.slice)),
-	}
+	sorted := emptySlice[T](len(s.slice))
 	copy(sorted.slice, s.slice)
 	sort.Slice(sorted.slice, sortFunc(sorted.slice))
 
@@ -186,7 +184,7 @@ func (s *slice[T]) Take(n int) *slice[T] {
 		return s
 	}
 
-	newSlice := emptySlice[T]()
+	newSlice := emptySlice[T](0)
 	if n <= 0 {
 		return newSlice
 	}
@@ -205,7 +203,7 @@ func (s *slice[T]) Skip(n int) *slice[T] {
 		return s
 	}
 
-	newSlice := emptySlice[T]()
+	newSlice := emptySlice[T](0)
 	if n < len(s.slice) {
 		newSlice.slice = append(newSlice.slice, s.slice[n:]...)
 	}
@@ -217,7 +215,7 @@ func (s *slice[T]) Reverse() *slice[T] {
 		return s
 	}
 
-	reversed := emptySlice[T]()
+	reversed := emptySlice[T](0)
 	for i := len(s.slice) - 1; i >= 0; i-- {
 		reversed.slice = append(reversed.slice, s.slice[i])
 	}
@@ -243,7 +241,7 @@ func (s *slice[T]) Concat(slices ...*slice[T]) *slice[T] {
 
 	for _, slice := range slices {
 		if slice.err != nil {
-			s.setError(slice.err)
+			s.err = slice.err
 			return s
 		}
 		s.slice = append(s.slice, slice.slice...)
@@ -442,40 +440,43 @@ func (s *slice[T]) ForEach(consumer func(elem T) error) error {
 // free functions
 
 func MapSlice[T, R any](s *slice[T], mapper func(elem T) (R, error)) *slice[R] {
-	newSlice := emptySlice[R]()
 	if s == nil {
-		return newSlice
+		return emptySlice[R](0)
 	}
+	newSlice := emptySlice[R](len(s.slice))
 
 	if s.err != nil {
-		newSlice.setError(s.err)
+		newSlice.err = s.err
 		return newSlice
 	}
 
 	for idx := range s.slice {
 		newValue, err := mapper(s.slice[idx])
-		newSlice.setError(err)
-		newSlice.slice = append(newSlice.slice, newValue)
+		if err != nil {
+			newSlice.err = err
+			return newSlice
+		}
+		newSlice.slice[idx] = newValue
 	}
 
 	return newSlice
 }
 
 func FlatMapSlice[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error)) *slice[T2] {
-	newSlice := emptySlice[T2]()
+	newSlice := emptySlice[T2](0)
 	if s == nil {
 		return newSlice
 	}
 
 	if s.err != nil {
-		newSlice.setError(s.err)
+		newSlice.err = s.err
 		return newSlice
 	}
 
 	for idx := range s.slice {
 		newValues, err := mapper(s.slice[idx])
 		if err != nil {
-			newSlice.setError(err)
+			newSlice.err = err
 			return newSlice
 		}
 
@@ -492,12 +493,12 @@ func ZipSlices[T1, T2 any](s1 *slice[T1], s2 *slice[T2]) *slice[tupel.Tupel[T1, 
 	}
 
 	if s1.err != nil {
-		newSlice.setError(s1.err)
+		newSlice.err = s1.err
 		return newSlice
 	}
 
 	if s2.err != nil {
-		newSlice.setError(s2.err)
+		newSlice.err = s2.err
 		return newSlice
 	}
 
@@ -515,14 +516,14 @@ func GroupBySlice[K common.Key, T any](s *slice[T], keyMapper func(elem T) (K, e
 		return pairs
 	}
 	if s.err != nil {
-		pairs.setError(s.err)
+		pairs.err = s.err
 		return pairs
 	}
 
 	for idx := range s.slice {
 		key, err := keyMapper(s.slice[idx])
 		if err != nil {
-			pairs.setError(err)
+			pairs.err = err
 			return pairs
 		}
 		pairs.m[key] = append(pairs.m[key], s.slice[idx])

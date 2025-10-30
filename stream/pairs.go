@@ -25,30 +25,24 @@ func FromMap[K common.Key, V any](m map[K]V) *pairs[K, V] {
 	}
 }
 
-func (p *pairs[K, V]) setError(err error) {
-	if err != nil && p.err == nil {
-		p.err = err
-	}
-}
-
 func (p *pairs[K, V]) Flatten() *slice[V] {
-	arr := emptySlice[V]()
+	s := emptySlice[V](0)
 	if p.err != nil {
-		arr.setError(p.err)
-		return arr
+		s.err = p.err
+		return s
 	}
 
 	for _, value := range p.m {
-		arr.slice = append(arr.slice, value)
+		s.slice = append(s.slice, value)
 	}
 
-	return arr
+	return s
 }
 
 func (p *pairs[K, V]) Keys() *slice[K] {
-	s := emptySlice[K]()
+	s := emptySlice[K](len(p.m))
 	if p.err != nil {
-		s.setError(p.err)
+		s.err = p.err
 		return s
 	}
 
