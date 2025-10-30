@@ -11,6 +11,6 @@ func mapper(word string) string {
 
 func BenchmarkWordCount(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		FromFile("../assets/words.txt").GroupByString(mapper).CountValues()
+		EagerFromFile("../assets/words.txt").GroupByString(mapper).CountValues()
 	}
 }

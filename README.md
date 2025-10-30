@@ -62,20 +62,20 @@ This section provides detailed examples for all functions available in the `stre
 
 ### Creating Slices
 
-#### `From[T any](tokens []T)`
+#### `EagerFrom[T any](tokens []T)`
 Creates a new stream from an existing slice.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
-words := stream.From([]string{"hello", "world", "go"})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
+words := stream.EagerFrom([]string{"hello", "world", "go"})
 ```
 
-#### `FromFile(path string)`
+#### `EagerFromFile(path string)`
 Creates a stream of strings from a file (splits by whitespace).
 
 ```go
 // Assuming a file "data.txt" contains: "apple banana cherry"
-words := stream.FromFile("data.txt")
+words := stream.EagerFromFile("data.txt")
 result, _ := words.ToSlice() // ["apple", "banana", "cherry"]
 ```
 
@@ -85,7 +85,7 @@ result, _ := words.ToSlice() // ["apple", "banana", "cherry"]
 Filters elements based on a predicate.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5, 6})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5, 6})
 evens := numbers.Filter(func(x int) (bool, error) {
     return x%2 == 0, nil
 })
@@ -96,7 +96,7 @@ result, _ := evens.ToSlice() // [2, 4, 6]
 Transforms each element using a mapper function.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4})
 squared := numbers.Map(func(x int) (int, error) {
     return x * x, nil
 })
@@ -107,7 +107,7 @@ result, _ := squared.ToSlice() // [1, 4, 9, 16]
 Maps elements to integers.
 
 ```go
-words := stream.From([]string{"a", "bb", "ccc"})
+words := stream.EagerFrom([]string{"a", "bb", "ccc"})
 lengths := words.MapToInt(func(s string) (int, error) {
     return len(s), nil
 })
@@ -118,7 +118,7 @@ result, _ := lengths.ToSlice() // [1, 2, 3]
 Maps elements to strings.
 
 ```go
-numbers := stream.From([]int{1, 2, 3})
+numbers := stream.EagerFrom([]int{1, 2, 3})
 strings := numbers.MapToString(func(x int) (string, error) {
     return fmt.Sprintf("num_%d", x), nil
 })
@@ -129,7 +129,7 @@ result, _ := strings.ToSlice() // ["num_1", "num_2", "num_3"]
 Flattens nested slices.
 
 ```go
-words := stream.From([]string{"hello", "world"})
+words := stream.EagerFrom([]string{"hello", "world"})
 chars := stream.FlatMapSlice(words, func(s string) ([]string, error) {
     return strings.Split(s, ""), nil
 })
@@ -142,7 +142,7 @@ result, _ := chars.ToSlice() // ["h", "e", "l", "l", "o", "w", "o", "r", "l", "d
 Sorts elements using a custom comparator.
 
 ```go
-numbers := stream.From([]int{5, 2, 8, 1, 9})
+numbers := stream.EagerFrom([]int{5, 2, 8, 1, 9})
 sorted := numbers.Sort(func(slice []int) func(i, j int) bool {
     return func(i, j int) bool {
         return slice[i] < slice[j]
@@ -155,7 +155,7 @@ result, _ := sorted.ToSlice() // [1, 2, 5, 8, 9]
 Reverses the order of elements.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
 reversed := numbers.Reverse()
 result, _ := reversed.ToSlice() // [5, 4, 3, 2, 1]
 ```
@@ -166,7 +166,7 @@ result, _ := reversed.ToSlice() // [5, 4, 3, 2, 1]
 Takes the first n elements.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
 first3 := numbers.Take(3)
 result, _ := first3.ToSlice() // [1, 2, 3]
 ```
@@ -175,7 +175,7 @@ result, _ := first3.ToSlice() // [1, 2, 3]
 Skips the first n elements.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
 afterFirst2 := numbers.Skip(2)
 result, _ := afterFirst2.ToSlice() // [3, 4, 5]
 ```
@@ -186,7 +186,7 @@ result, _ := afterFirst2.ToSlice() // [3, 4, 5]
 Removes duplicate elements.
 
 ```go
-numbers := stream.From([]int{1, 2, 2, 3, 3, 3, 4})
+numbers := stream.EagerFrom([]int{1, 2, 2, 3, 3, 3, 4})
 unique := numbers.Distinct(func(a, b int) bool {
     return a == b
 })
@@ -197,9 +197,9 @@ result, _ := unique.ToSlice() // [1, 2, 3, 4]
 Concatenates multiple streams.
 
 ```go
-slice1 := stream.From([]int{1, 2, 3})
-slice2 := stream.From([]int{4, 5, 6})
-slice3 := stream.From([]int{7, 8, 9})
+slice1 := stream.EagerFrom([]int{1, 2, 3})
+slice2 := stream.EagerFrom([]int{4, 5, 6})
+slice3 := stream.EagerFrom([]int{7, 8, 9})
 combined := slice1.Concat(slice2, slice3)
 result, _ := combined.ToSlice() // [1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
@@ -210,7 +210,7 @@ result, _ := combined.ToSlice() // [1, 2, 3, 4, 5, 6, 7, 8, 9]
 Groups elements by string keys.
 
 ```go
-words := stream.From([]string{"apple", "banana", "apricot", "blueberry"})
+words := stream.EagerFrom([]string{"apple", "banana", "apricot", "blueberry"})
 grouped := words.GroupByString(func(s string) string {
     return string(s[0]) // Group by first letter
 })
@@ -221,7 +221,7 @@ grouped := words.GroupByString(func(s string) string {
 Partitions elements into two groups based on a predicate.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5, 6})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5, 6})
 partitioned := numbers.PartitioningBy(func(x int) (bool, error) {
     return x%2 == 0, nil
 })
@@ -232,7 +232,7 @@ partitioned := numbers.PartitioningBy(func(x int) (bool, error) {
 Creates a map with string keys.
 
 ```go
-words := stream.From([]string{"cat", "dog", "elephant"})
+words := stream.EagerFrom([]string{"cat", "dog", "elephant"})
 associated := words.AssociateByString(func(s string) (string, error) {
     return string(s[0]), nil
 })
@@ -245,7 +245,7 @@ associated := words.AssociateByString(func(s string) (string, error) {
 Converts the stream back to a regular Go slice.
 
 ```go
-stream := stream.From([]int{1, 2, 3}).Filter(func(x int) (bool, error) {
+stream := stream.EagerFrom([]int{1, 2, 3}).Filter(func(x int) (bool, error) {
     return x > 1, nil
 })
 result, err := stream.ToSlice() // [2, 3], nil
@@ -255,7 +255,7 @@ result, err := stream.ToSlice() // [2, 3], nil
 Returns the number of elements.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
 count, _ := numbers.Count() // 5
 ```
 
@@ -263,10 +263,10 @@ count, _ := numbers.Count() // 5
 Returns the first element or a default value.
 
 ```go
-numbers := stream.From([]int{1, 2, 3})
+numbers := stream.EagerFrom([]int{1, 2, 3})
 first, _ := numbers.First() // *1
 
-empty := stream.From([]int{})
+empty := stream.EagerFrom([]int{})
 firstOrDefault, _ := empty.First(99) // *99
 ```
 
@@ -274,7 +274,7 @@ firstOrDefault, _ := empty.First(99) // *99
 Returns the last element or a default value.
 
 ```go
-numbers := stream.From([]int{1, 2, 3})
+numbers := stream.EagerFrom([]int{1, 2, 3})
 last, _ := numbers.Last() // *3
 ```
 
@@ -282,7 +282,7 @@ last, _ := numbers.Last() // *3
 Returns the first element matching a predicate.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
 firstEven, _ := numbers.FirstOrNil(func(x int) (bool, error) {
     return x%2 == 0, nil
 }) // *2
@@ -292,7 +292,7 @@ firstEven, _ := numbers.FirstOrNil(func(x int) (bool, error) {
 Returns the last element matching a predicate.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
 lastEven, _ := numbers.LastOrNil(func(x int) (bool, error) {
     return x%2 == 0, nil
 }) // *4
@@ -304,7 +304,7 @@ lastEven, _ := numbers.LastOrNil(func(x int) (bool, error) {
 Checks if any element matches the predicate.
 
 ```go
-numbers := stream.From([]int{1, 3, 5, 7})
+numbers := stream.EagerFrom([]int{1, 3, 5, 7})
 hasEven, _ := numbers.AnyMatch(func(x int) (bool, error) {
     return x%2 == 0, nil
 }) // false
@@ -314,7 +314,7 @@ hasEven, _ := numbers.AnyMatch(func(x int) (bool, error) {
 Checks if all elements match the predicate.
 
 ```go
-numbers := stream.From([]int{2, 4, 6, 8})
+numbers := stream.EagerFrom([]int{2, 4, 6, 8})
 allEven, _ := numbers.AllMatch(func(x int) (bool, error) {
     return x%2 == 0, nil
 }) // true
@@ -324,7 +324,7 @@ allEven, _ := numbers.AllMatch(func(x int) (bool, error) {
 Checks if no elements match the predicate.
 
 ```go
-numbers := stream.From([]int{1, 3, 5, 7})
+numbers := stream.EagerFrom([]int{1, 3, 5, 7})
 noneEven, _ := numbers.NoneMatch(func(x int) (bool, error) {
     return x%2 == 0, nil
 }) // true
@@ -336,7 +336,7 @@ noneEven, _ := numbers.NoneMatch(func(x int) (bool, error) {
 Reduces the stream to a single value.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
 sum, _ := numbers.Reduce(0, accumulator.NewSumAccumulator[int]())
 // sum = 15
 ```
@@ -345,7 +345,7 @@ sum, _ := numbers.Reduce(0, accumulator.NewSumAccumulator[int]())
 Executes a function for each element.
 
 ```go
-numbers := stream.From([]int{1, 2, 3})
+numbers := stream.EagerFrom([]int{1, 2, 3})
 err := numbers.ForEach(func(x int) error {
     fmt.Printf("Number: %d\n", x)
     return nil
@@ -359,7 +359,7 @@ Unfortunately, Go does not allow something like `func (s *slice[T]) Map[R any](m
 #### `MapSlice[T, R any](s *slice[T], mapper func(elem T) (R, error))`
 Maps a slice to another type T -> R
 ```go
-numbers := From([]int{1, 2, 3, 4, 5})
+numbers := EagerFrom([]int{1, 2, 3, 4, 5})
 result, err := MapSlice(numbers, func(elem int) (string, error) {
 	return "Number: " + string(rune('0'+elem)), nil
 }).ToSlice()
@@ -370,8 +370,8 @@ result, err := MapSlice(numbers, func(elem int) (string, error) {
 Combines two streams into tuples.
 
 ```go
-numbers := stream.From([]int{1, 2, 3})
-letters := stream.From([]string{"a", "b", "c"})
+numbers := stream.EagerFrom([]int{1, 2, 3})
+letters := stream.EagerFrom([]string{"a", "b", "c"})
 zipped := stream.ZipSlices(numbers, letters)
 // Result: [(1,"a"), (2,"b"), (3,"c")]
 ```
@@ -384,7 +384,7 @@ zipped := stream.ZipSlices(numbers, letters)
 Converts the stream to a lazy sequence.
 
 ```go
-numbers := stream.From([]int{1, 2, 3, 4, 5})
+numbers := stream.EagerFrom([]int{1, 2, 3, 4, 5})
 sequence := numbers.AsSequence()
 // Now you can use lazy operations
 ```
@@ -393,7 +393,7 @@ sequence := numbers.AsSequence()
 Writes the stream as JSON to a writer.
 
 ```go
-numbers := stream.From([]int{1, 2, 3})
+numbers := stream.EagerFrom([]int{1, 2, 3})
 var buf bytes.Buffer
 bytesWritten, err := numbers.Write(&buf)
 // buf contains: [1,2,3]
@@ -411,7 +411,7 @@ import (
 
 func main() {
     // Process a list of numbers
-    result, err := stream.From([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}).
+    result, err := stream.EagerFrom([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}).
         Filter(func(x int) (bool, error) { return x%2 == 0, nil }). // Keep even numbers
         Map(func(x int) (int, error) { return x * x, nil }).        // Square them
         Take(3).                                                    // Take first 3

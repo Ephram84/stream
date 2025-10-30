@@ -10,7 +10,7 @@ type seq[T any] struct {
 	next func() (T, bool, error)
 }
 
-func FromSlice[T any](slice []T, errs ...error) *seq[T] {
+func LazyFrom[T any](slice []T, errs ...error) *seq[T] {
 	var i int
 	return &seq[T]{
 		next: func() (T, bool, error) {

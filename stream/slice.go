@@ -25,7 +25,7 @@ func emptySlice[T any](len int) *slice[T] {
 	}
 }
 
-func From[T any](tokens []T) *slice[T] {
+func EagerFrom[T any](tokens []T) *slice[T] {
 	arr := slice[T]{
 		slice: make([]T, len(tokens)),
 		err:   nil,
@@ -36,7 +36,7 @@ func From[T any](tokens []T) *slice[T] {
 	return &arr
 }
 
-func FromFile(path string) *slice[string] {
+func EagerFromFile(path string) *slice[string] {
 	f, err := os.Open(path)
 	if err != nil {
 		return &slice[string]{
@@ -51,11 +51,11 @@ func FromFile(path string) *slice[string] {
 	}
 
 	fields := strings.Fields(string(input))
-	return From(fields)
+	return EagerFrom(fields)
 }
 
 func (s *slice[T]) AsSequence() *seq[T] {
-	return FromSlice(s.slice, s.err)
+	return LazyFrom(s.slice, s.err)
 }
 
 func (s *slice[T]) Filter(filter func(elem T) (bool, error)) *slice[T] {
