@@ -1,4 +1,4 @@
-package stream
+package sequence
 
 import (
 	"github.com/Ephram84/stream/stream/accumulator"
@@ -10,7 +10,7 @@ type seq[T any] struct {
 	next func() (T, bool, error)
 }
 
-func LazyFrom[T any](slice []T, errs ...error) *seq[T] {
+func From[T any](slice []T, errs ...error) *seq[T] {
 	var i int
 	return &seq[T]{
 		next: func() (T, bool, error) {

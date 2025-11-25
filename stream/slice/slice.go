@@ -1,4 +1,4 @@
-package stream
+package slice
 
 import (
 	"encoding/json"
@@ -25,7 +25,7 @@ func emptySlice[T any](len int) *slice[T] {
 	}
 }
 
-func EagerFrom[T any](tokens []T) *slice[T] {
+func From[T any](tokens []T) *slice[T] {
 	arr := slice[T]{
 		slice: make([]T, len(tokens)),
 		err:   nil,
@@ -36,7 +36,7 @@ func EagerFrom[T any](tokens []T) *slice[T] {
 	return &arr
 }
 
-func EagerFromFile(path string) *slice[string] {
+func FromFile(path string) *slice[string] {
 	f, err := os.Open(path)
 	if err != nil {
 		return &slice[string]{
@@ -51,11 +51,7 @@ func EagerFromFile(path string) *slice[string] {
 	}
 
 	fields := strings.Fields(string(input))
-	return EagerFrom(fields)
-}
-
-func (s *slice[T]) AsSequence() *seq[T] {
-	return LazyFrom(s.slice, s.err)
+	return From(fields)
 }
 
 func (s *slice[T]) Filter(filter func(elem T) (bool, error)) *slice[T] {

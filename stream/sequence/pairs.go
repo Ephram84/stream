@@ -1,4 +1,4 @@
-package stream
+package sequence
 
 import (
 	"maps"
@@ -25,34 +25,30 @@ func FromMap[K common.Key, V any](m map[K]V) *pairs[K, V] {
 	}
 }
 
-func (p *pairs[K, V]) Flatten() *slice[V] {
-	s := emptySlice[V](0)
+func (p *pairs[K, V]) Flatten() *seq[V] {
+	arr := make([]V, 0)
 	if p.err != nil {
-		s.err = p.err
-		return s
+		return From[V](nil, p.err)
 	}
 
-	for _, value := range p.m {
-		s.slice = append(s.slice, value)
+	for _, values := range p.m {
+		arr = append(arr, values)
 	}
 
-	return s
+	return From(arr, nil)
 }
 
-func (p *pairs[K, V]) Keys() *slice[K] {
-	s := emptySlice[K](len(p.m))
+func (p *pairs[K, V]) Keys() *seq[K] {
+	s := make([]K, 0, len(p.m))
 	if p.err != nil {
-		s.err = p.err
-		return s
+		return From[K](nil, p.err)
 	}
 
-	idx := 0
 	for key := range p.m {
-		s.slice[idx] = key
-		idx++
+		s = append(s, key)
 	}
 
-	return s
+	return From(s, nil)
 }
 
 func (p *pairs[K, V]) ToMap() (map[K]V, error) {

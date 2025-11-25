@@ -1,4 +1,4 @@
-package stream
+package sequence
 
 import (
 	"github.com/Ephram84/stream/stream/accumulator"
@@ -24,49 +24,47 @@ func emptyMapWithSlices[K common.Key, V any]() *pairsSlice[K, V] {
 	}
 }
 
-func (m pairsSlice[K, V]) CountValues() *pairs[K, int] {
+func (p pairsSlice[K, V]) CountValues() *pairs[K, int] {
 	newPairs := emptyPairs[K, int]()
 
-	if newPairs.err != nil {
-		newPairs.err = m.err
+	if p.err != nil {
+		newPairs.err = p.err
 		return newPairs
 	}
 
-	for key, values := range m.m {
+	for key, values := range p.m {
 		newPairs.m[key] = len(values)
 	}
 
 	return newPairs
 }
 
-func (p *pairsSlice[K, V]) Flatten() *slice[V] {
-	arr := emptySlice[V](0)
+func (p *pairsSlice[K, V]) Flatten() *seq[V] {
+	arr := make([]V, 0)
 	if p.err != nil {
-		arr.err = p.err
-		return arr
+		return From[V](nil, p.err)
 	}
 
 	for _, values := range p.m {
-		arr.slice = append(arr.slice, values...)
+		arr = append(arr, values...)
 	}
 
-	return arr
+	return From(arr, nil)
 }
 
-func (p *pairsSlice[K, V]) Keys() *slice[K] {
-	s := emptySlice[K](len(p.m))
+func (p *pairsSlice[K, V]) Keys() *seq[K] {
+	s := make([]K, len(p.m))
 	if p.err != nil {
-		s.err = p.err
-		return s
+		return From[K](nil, p.err)
 	}
 
 	idx := 0
 	for key := range p.m {
-		s.slice[idx] = key
+		s[idx] = key
 		idx++
 	}
 
-	return s
+	return From(s, nil)
 }
 
 func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *pairsSlice[K, float64] {
@@ -109,6 +107,30 @@ func (p *pairsSlice[K, V]) Reduce(identity V, acc accumulator.Accumulator[V]) *p
 		default:
 			result := identity
 			for idx := range values {
+				result = acc.Apply(result, values[idx])
+			}
+			pairs.m[key] = result
+		}
+	}
+
+	return pairs
+}
+
+func (p *pairsSlice[K, V]) Aggregate(acc accumulator.Accumulator[V]) *pairs[K, V] {
+	pairs := emptyPairs[K, V]()
+	if pairs.err != nil {
+		pairs.err = p.err
+		return pairs
+	}
+	for key, values := range p.m {
+		switch len(values) {
+		case 0:
+			continue
+		case 1:
+			pairs.m[key] = values[0]
+		default:
+			result := values[0]
+			for idx := 1; idx < len(values); idx++ {
 				result = acc.Apply(result, values[idx])
 			}
 			pairs.m[key] = result
