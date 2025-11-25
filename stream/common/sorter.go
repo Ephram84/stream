@@ -1,4 +1,4 @@
-package stream
+package common
 
 func SortInts(arr []int) func(i, j int) bool {
 	return func(i, j int) bool {
