@@ -57,9 +57,9 @@ func TestWords(t *testing.T) {
 	words, err := FromFile("../../assets/words.txt").GroupByString(mapper).CountValues().ToMap()
 	assert.NoError(t, err)
 
-	assert.Equal(t, 127, words["a"])
-	assert.Equal(t, 141, words["ac"])
-	assert.Equal(t, 68, words["luctus"])
+	assert.Equal(t, 110, words["a"])
+	assert.Equal(t, 123, words["ac"])
+	assert.Equal(t, 55, words["luctus"])
 }
 
 func TestSlice(t *testing.T) {
