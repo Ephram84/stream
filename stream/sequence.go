@@ -10,7 +10,7 @@ type seq[T any] struct {
 	next func() (T, bool, error)
 }
 
-func FromSlice[T any](slice []T, errs ...error) *seq[T] {
+func LazyFrom[T any](slice []T, errs ...error) *seq[T] {
 	var i int
 	return &seq[T]{
 		next: func() (T, bool, error) {
@@ -96,7 +96,7 @@ func (s *seq[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSlic
 	for {
 		val, ok, err := s.next()
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		if !ok {
@@ -104,7 +104,7 @@ func (s *seq[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSlic
 		}
 		key, err := predicate(val)
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		result.m[key] = append(result.m[key], val)
@@ -133,7 +133,7 @@ func (s *seq[T]) AssociateByString(mapper func(elem T) (string, error)) *pairs[s
 	for {
 		val, ok, err := s.next()
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		if !ok {
@@ -141,7 +141,7 @@ func (s *seq[T]) AssociateByString(mapper func(elem T) (string, error)) *pairs[s
 		}
 		key, err := mapper(val)
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		result.m[key] = val
@@ -154,7 +154,7 @@ func (s *seq[T]) AssociateByInt(mapper func(elem T) (int, error)) *pairs[int, T]
 	for {
 		val, ok, err := s.next()
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		if !ok {
@@ -162,7 +162,7 @@ func (s *seq[T]) AssociateByInt(mapper func(elem T) (int, error)) *pairs[int, T]
 		}
 		key, err := mapper(val)
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		result.m[key] = val
@@ -175,7 +175,7 @@ func (s *seq[T]) AssociateByInt64(mapper func(elem T) (int64, error)) *pairs[int
 	for {
 		val, ok, err := s.next()
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		if !ok {
@@ -183,7 +183,7 @@ func (s *seq[T]) AssociateByInt64(mapper func(elem T) (int64, error)) *pairs[int
 		}
 		key, err := mapper(val)
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		result.m[key] = val
@@ -196,7 +196,7 @@ func (s *seq[T]) AssociateByFloat(mapper func(elem T) (float64, error)) *pairs[f
 	for {
 		val, ok, err := s.next()
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		if !ok {
@@ -204,7 +204,7 @@ func (s *seq[T]) AssociateByFloat(mapper func(elem T) (float64, error)) *pairs[f
 		}
 		key, err := mapper(val)
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		result.m[key] = val
@@ -600,7 +600,7 @@ func GroupBySeq[K common.Key, T any](seq *seq[T], keyMapper func(elem T) (K, err
 	for {
 		val, ok, err := seq.next()
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		if !ok {
@@ -608,7 +608,7 @@ func GroupBySeq[K common.Key, T any](seq *seq[T], keyMapper func(elem T) (K, err
 		}
 		key, err := keyMapper(val)
 		if err != nil {
-			result.setError(err)
+			result.err = err
 			return result
 		}
 		result.m[key] = append(result.m[key], val)

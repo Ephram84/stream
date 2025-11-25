@@ -45,13 +45,13 @@ var sliceEmployee = []Employee{
 
 func TestError(t *testing.T) {
 	numbers := []string{"1", "2", "a", "4"}
-	result, err := From(numbers).MapToInt(common.StringToInt).Filter(isEven).ToSlice()
+	result, err := EagerFrom(numbers).MapToInt(common.StringToInt).Filter(isEven).ToSlice()
 	assert.Error(t, err)
 	assert.Empty(t, result)
 }
 
 func TestWords(t *testing.T) {
-	words, err := FromFile("../assets/words.txt").GroupByString(mapper).CountValues().ToMap()
+	words, err := EagerFromFile("../assets/words.txt").GroupByString(mapper).CountValues().ToMap()
 	assert.NoError(t, err)
 
 	assert.Equal(t, 127, words["a"])
@@ -62,7 +62,7 @@ func TestWords(t *testing.T) {
 var isWord = regexp.MustCompile(`[A-Za-z]+`)
 
 func TestSlice(t *testing.T) {
-	ints, err := From([][]int{{0, 1, 2}, {3, 4, 5}, {6}}).
+	ints, err := EagerFrom([][]int{{0, 1, 2}, {3, 4, 5}, {6}}).
 		Filter(func(ints []int) (bool, error) { return len(ints) > 1, nil }).
 		ToSlice()
 	assert.NoError(t, err)
@@ -72,15 +72,15 @@ func TestSlice(t *testing.T) {
 func TestMatch(t *testing.T) {
 	numbers := []int{2, 4, 5, 6, 8}
 
-	allEven, err := From(numbers).AllMatch(isEven)
+	allEven, err := EagerFrom(numbers).AllMatch(isEven)
 	assert.NoError(t, err)
 	assert.False(t, allEven)
 
-	oneEven, err := From(numbers).AnyMatch(isEven)
+	oneEven, err := EagerFrom(numbers).AnyMatch(isEven)
 	assert.NoError(t, err)
 	assert.True(t, oneEven)
 
-	noneMultipleOfThree, err := From(numbers).NoneMatch(func(elem int) (bool, error) {
+	noneMultipleOfThree, err := EagerFrom(numbers).NoneMatch(func(elem int) (bool, error) {
 		return elem%3 == 0, nil
 	})
 	assert.NoError(t, err)
@@ -90,12 +90,12 @@ func TestMatch(t *testing.T) {
 func TestWrite(t *testing.T) {
 	numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
-	_, err := From(numbers).Write(os.Stdout)
+	_, err := EagerFrom(numbers).Write(os.Stdout)
 	assert.NoError(t, err)
 }
 
 func TestFindFirst(t *testing.T) {
-	employee, err := From(sliceEmployee).Filter(func(elem Employee) (bool, error) {
+	employee, err := EagerFrom(sliceEmployee).Filter(func(elem Employee) (bool, error) {
 		return elem.Salary > 100000.0, nil
 	}).First()
 	assert.NoError(t, err)
@@ -106,7 +106,7 @@ func TestFindFirst(t *testing.T) {
 }
 
 func TestFindFirstOrElse(t *testing.T) {
-	employee, err := From(sliceEmployee).Filter(func(elem Employee) (bool, error) {
+	employee, err := EagerFrom(sliceEmployee).Filter(func(elem Employee) (bool, error) {
 		return elem.Salary > 1000000.0, nil
 	}).First(Employee{Name: "John Doe"})
 	assert.NoError(t, err)
@@ -116,7 +116,7 @@ func TestFindFirstOrElse(t *testing.T) {
 }
 
 func TestMapToFloat(t *testing.T) {
-	salaries, err := From(sliceEmployee).MapToFloat(func(elem Employee) (float64, error) {
+	salaries, err := EagerFrom(sliceEmployee).MapToFloat(func(elem Employee) (float64, error) {
 		return elem.Salary, nil
 	}).ToSlice()
 	assert.NoError(t, err)
@@ -127,14 +127,14 @@ func TestMapToFloat(t *testing.T) {
 func TestPartitionBy(t *testing.T) {
 	numbers := []int{2, 4, 5, 6, 8}
 
-	isEven, err := From(numbers).PartitioningBy(isEven).ToMap()
+	isEven, err := EagerFrom(numbers).PartitioningBy(isEven).ToMap()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{2, 4, 6, 8}, isEven[true])
 	assert.Equal(t, []int{5}, isEven[false])
 }
 
 func TestGroupBy(t *testing.T) {
-	groupByAlphabet, err := From(sliceEmployee).GroupByString(func(elem Employee) string {
+	groupByAlphabet, err := EagerFrom(sliceEmployee).GroupByString(func(elem Employee) string {
 		return elem.Name[0:1]
 	}).ToMap()
 	assert.NoError(t, err)
@@ -144,7 +144,7 @@ func TestGroupBy(t *testing.T) {
 }
 
 func TestMapToInt(t *testing.T) {
-	lengthOfNames, err := From(sliceEmployee).MapToInt(func(elem Employee) (int, error) {
+	lengthOfNames, err := EagerFrom(sliceEmployee).MapToInt(func(elem Employee) (int, error) {
 		return len(elem.Name), nil
 	}).ToSlice()
 	assert.NoError(t, err)
@@ -153,13 +153,13 @@ func TestMapToInt(t *testing.T) {
 
 func TestMaxWithInts(t *testing.T) {
 	numbers := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	maxInt, err := From(numbers).Reduce(0, accumulator.Max(common.MaxInt))
+	maxInt, err := EagerFrom(numbers).Reduce(0, accumulator.Max(common.MaxInt))
 	assert.NoError(t, err)
 	assert.Equal(t, 9, maxInt)
 }
 
 func TestMax(t *testing.T) {
-	maxEmployer, err := From(sliceEmployee).Reduce(Employee{}, accumulator.Max(func(max, elem Employee) bool {
+	maxEmployer, err := EagerFrom(sliceEmployee).Reduce(Employee{}, accumulator.Max(func(max, elem Employee) bool {
 		return max.Salary < elem.Salary
 	}))
 	assert.NoError(t, err)
@@ -168,7 +168,7 @@ func TestMax(t *testing.T) {
 }
 
 func TestMin(t *testing.T) {
-	minEmployer, err := From(sliceEmployee).Reduce(sliceEmployee[2], accumulator.Min(func(min, elem Employee) bool {
+	minEmployer, err := EagerFrom(sliceEmployee).Reduce(sliceEmployee[2], accumulator.Min(func(min, elem Employee) bool {
 		return min.Salary > elem.Salary
 	}))
 	assert.NoError(t, err)
@@ -182,7 +182,7 @@ func TestFlatMapInts(t *testing.T) {
 		{7, 8, 9},
 	}
 
-	ints, err := FlatMapSlice(From(intSlice), func(elem []int) ([]int, error) {
+	ints, err := FlatMapSlice(EagerFrom(intSlice), func(elem []int) ([]int, error) {
 		return elem, nil
 	}).ToSlice()
 	assert.NoError(t, err)
@@ -217,7 +217,7 @@ func TestFlatMap(t *testing.T) {
 		},
 	}
 
-	numberOfTransactions, err := FlatMapSlice(From(accounts), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMapSlice(EagerFrom(accounts), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
@@ -229,7 +229,7 @@ func TestFlatMap(t *testing.T) {
 func TestFlatMapWithEmptyAccounts(t *testing.T) {
 	accounts := []Account{}
 
-	numberOfTransactions, err := FlatMapSlice(From(accounts), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMapSlice(EagerFrom(accounts), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
@@ -252,14 +252,14 @@ type Transaction struct {
 
 func TestSort(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).Sort(SortInts).ToSlice()
+	result, err := EagerFrom(numbers).Sort(SortInts).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3, 4, 5}, result)
 }
 
 func TestDistinct(t *testing.T) {
 	numbers := []int{5, 5, 3, 1, 1, 2, 4}
-	result, err := From(numbers).Distinct(common.Eq).ToSlice()
+	result, err := EagerFrom(numbers).Distinct(common.Eq).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{5, 3, 1, 2, 4}, result)
 }
@@ -280,7 +280,7 @@ func TestDistinctObjects(t *testing.T) {
 		},
 	}
 
-	result, err := From(transactions).Distinct(func(a, b Transaction) bool {
+	result, err := EagerFrom(transactions).Distinct(func(a, b Transaction) bool {
 		return a.ID == b.ID
 	}).ToSlice()
 	assert.NoError(t, err)
@@ -302,7 +302,7 @@ func TestWithNils(t *testing.T) {
 		nil,
 		{},
 	}
-	n, err := From(accounts).Filter(func(elem *Account) (bool, error) {
+	n, err := EagerFrom(accounts).Filter(func(elem *Account) (bool, error) {
 		return elem != nil, nil
 	}).Count()
 	assert.NoError(t, err)
@@ -311,14 +311,14 @@ func TestWithNils(t *testing.T) {
 
 func TestSum(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).Reduce(0, accumulator.Sum[int]())
+	result, err := EagerFrom(numbers).Reduce(0, accumulator.Sum[int]())
 	assert.NoError(t, err)
 	assert.Equal(t, 15, result)
 }
 
 func TestAvg(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).MapToFloat(common.IntToFloat64).Reduce(0.0, accumulator.Avg())
+	result, err := EagerFrom(numbers).MapToFloat(common.IntToFloat64).Reduce(0.0, accumulator.Avg())
 	assert.NoError(t, err)
 	assert.Equal(t, 3.0, result)
 }
@@ -339,7 +339,7 @@ func TestReducingToFloat(t *testing.T) {
 		},
 	}
 
-	result, err := From(transactions).GroupByString(func(elem Transaction) string {
+	result, err := EagerFrom(transactions).GroupByString(func(elem Transaction) string {
 		date := time.Unix(elem.BookingDate, 0)
 		return fmt.Sprintf("%d-%d", date.Year(), int(date.Month()))
 	}).MapToFloat64(func(elem Transaction) (float64, error) { return elem.Amount, nil }).Reduce(0.0, accumulator.Sum[float64]()).ToMap()
@@ -366,7 +366,7 @@ func TestAssociateByString(t *testing.T) {
 		},
 	}
 
-	result, err := From(transactions).AssociateByString(func(elem Transaction) (string, error) {
+	result, err := EagerFrom(transactions).AssociateByString(func(elem Transaction) (string, error) {
 		return elem.ID, nil
 	}).ToMap()
 	assert.NoError(t, err)
@@ -387,13 +387,13 @@ func TestAssociateByString(t *testing.T) {
 }
 
 func TestConcatSlices(t *testing.T) {
-	result, err := From([]int{4, 5}).Concat(From([]int{6, 7, 8})).ToSlice()
+	result, err := EagerFrom([]int{4, 5}).Concat(EagerFrom([]int{6, 7, 8})).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{4, 5, 6, 7, 8}, result)
 }
 
 func TestZipSlices(t *testing.T) {
-	result, err := ZipSlices(From([]int{1, 2, 3}), From([]string{"a", "b", "c", "d"})).ToSlice()
+	result, err := ZipSlices(EagerFrom([]int{1, 2, 3}), EagerFrom([]string{"a", "b", "c", "d"})).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []tupel.Tupel[int, string]{
 		{First: 1, Second: "a"},
@@ -403,7 +403,7 @@ func TestZipSlices(t *testing.T) {
 }
 
 func TestGroupBySlice(t *testing.T) {
-	numbers := From([]int{1, 2, 3, 4, 5, 6})
+	numbers := EagerFrom([]int{1, 2, 3, 4, 5, 6})
 	result := GroupBySlice(numbers, func(elem int) (string, error) {
 		if elem%2 == 0 {
 			return "even", nil
@@ -418,7 +418,7 @@ func TestGroupBySlice(t *testing.T) {
 }
 
 func TestTakeSlice(t *testing.T) {
-	result, err := From([]int{1, 2, 3, 4, 5}).
+	result, err := EagerFrom([]int{1, 2, 3, 4, 5}).
 		Take(3).
 		ToSlice()
 	assert.NoError(t, err)
@@ -426,7 +426,7 @@ func TestTakeSlice(t *testing.T) {
 }
 
 func TestSkipSlice(t *testing.T) {
-	result, err := From([]int{1, 2, 3, 4, 5}).
+	result, err := EagerFrom([]int{1, 2, 3, 4, 5}).
 		Skip(2).
 		ToSlice()
 	assert.NoError(t, err)
@@ -434,7 +434,7 @@ func TestSkipSlice(t *testing.T) {
 }
 
 func TestReverseSlice(t *testing.T) {
-	result, err := From([]int{1, 2, 3, 4, 5}).
+	result, err := EagerFrom([]int{1, 2, 3, 4, 5}).
 		Reverse().
 		ToSlice()
 	assert.NoError(t, err)

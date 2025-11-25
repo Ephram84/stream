@@ -24,17 +24,11 @@ func emptyMapWithSlices[K common.Key, V any]() *pairsSlice[K, V] {
 	}
 }
 
-func (p *pairsSlice[K, V]) setError(err error) {
-	if err != nil && p.err == nil {
-		p.err = err
-	}
-}
-
 func (m pairsSlice[K, V]) CountValues() *pairs[K, int] {
 	newPairs := emptyPairs[K, int]()
 
 	if newPairs.err != nil {
-		newPairs.setError(m.err)
+		newPairs.err = m.err
 		return newPairs
 	}
 
@@ -46,9 +40,9 @@ func (m pairsSlice[K, V]) CountValues() *pairs[K, int] {
 }
 
 func (p *pairsSlice[K, V]) Flatten() *slice[V] {
-	arr := emptySlice[V]()
+	arr := emptySlice[V](0)
 	if p.err != nil {
-		arr.setError(p.err)
+		arr.err = p.err
 		return arr
 	}
 
@@ -60,9 +54,9 @@ func (p *pairsSlice[K, V]) Flatten() *slice[V] {
 }
 
 func (p *pairsSlice[K, V]) Keys() *slice[K] {
-	s := emptySlice[K]()
+	s := emptySlice[K](len(p.m))
 	if p.err != nil {
-		s.setError(p.err)
+		s.err = p.err
 		return s
 	}
 
@@ -78,7 +72,7 @@ func (p *pairsSlice[K, V]) Keys() *slice[K] {
 func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *pairsSlice[K, float64] {
 	pairsSlice := emptyMapWithSlices[K, float64]()
 	if pairsSlice.err != nil {
-		pairsSlice.setError(p.err)
+		pairsSlice.err = p.err
 		return pairsSlice
 	}
 
@@ -87,7 +81,7 @@ func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *p
 		for idx := range values {
 			result, err := mapper(values[idx])
 			if err != nil {
-				pairsSlice.setError(err)
+				pairsSlice.err = err
 				return pairsSlice
 			}
 
@@ -102,7 +96,7 @@ func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *p
 func (p *pairsSlice[K, V]) Reduce(identity V, acc accumulator.Accumulator[V]) *pairs[K, V] {
 	pairs := emptyPairs[K, V]()
 	if pairs.err != nil {
-		pairs.setError(p.err)
+		pairs.err = p.err
 		return pairs
 	}
 
