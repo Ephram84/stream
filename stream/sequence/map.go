@@ -24,15 +24,15 @@ func emptyMapWithSlices[K common.Key, V any]() *pairsSlice[K, V] {
 	}
 }
 
-func (m pairsSlice[K, V]) CountValues() *pairs[K, int] {
+func (p pairsSlice[K, V]) CountValues() *pairs[K, int] {
 	newPairs := emptyPairs[K, int]()
 
-	if newPairs.err != nil {
-		newPairs.err = m.err
+	if p.err != nil {
+		newPairs.err = p.err
 		return newPairs
 	}
 
-	for key, values := range m.m {
+	for key, values := range p.m {
 		newPairs.m[key] = len(values)
 	}
 
