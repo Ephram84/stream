@@ -10,9 +10,19 @@ import (
 )
 
 // help functions, structures and variables for tests
-
 func isEven(elem int) (bool, error) {
 	return elem%2 == 0, nil
+}
+
+func mapper(s string) (string, error) {
+	return s, nil
+}
+
+type Transaction struct {
+	ID          string
+	Amount      float64
+	BookingDate int64
+	Tags        []string
 }
 
 func TestErrorSequence(t *testing.T) {
@@ -138,9 +148,27 @@ func TestNoneMatchReturnsFalseSequence(t *testing.T) {
 }
 
 func TestReduceSumSequence(t *testing.T) {
-	result, err := From([]int{1, 2, 3, 4, 5}).Reduce(0, accumulator.Sum[int]())
+	result, err := From([]int{1, 2, 3, 4, 5}).Reduce(accumulator.SumSeq)
 	assert.NoError(t, err)
 	assert.Equal(t, 15, result)
+}
+
+func TestReduceAvgSequence(t *testing.T) {
+	result, err := From([]float64{2.1, 4.2, 6.3, 8.4}).Reduce(accumulator.AvgSeq)
+	assert.NoError(t, err)
+	assert.Equal(t, 5.25, result)
+}
+
+func TestReduceMinSequence(t *testing.T) {
+	result, err := From([]int{5, 3, 8, 1, 4}).Reduce(accumulator.MinSeq)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, result)
+}
+
+func TestReduceMaxSequence(t *testing.T) {
+	result, err := From([]int{5, 3, 8, 1, 4}).Reduce(accumulator.MaxSeq)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, result)
 }
 
 func TestConcatSequences(t *testing.T) {

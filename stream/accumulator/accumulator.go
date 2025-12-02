@@ -2,72 +2,67 @@ package accumulator
 
 import "github.com/Ephram84/stream/stream/common"
 
-type Accumulator[T any] interface {
-	Apply(partialResult, elem T) T
-}
+type Accumulator[T any] func(values []T) (T, error)
 
-type sum[N common.Numbers] struct{}
-
-func Sum[N common.Numbers]() *sum[N] {
-	return &sum[N]{}
-}
-
-func (s *sum[N]) Apply(partialResult, elem N) N {
-	return partialResult + elem
-}
-
-type avg[N common.Numbers] struct {
-	count N
-}
-
-func Avg() *avg[float64] {
-	return &avg[float64]{
-		count: 0,
+func Sum[T common.Numbers](values []T) (T, error) {
+	var sum T
+	for _, v := range values {
+		sum = sum + v
 	}
+	return sum, nil
 }
 
-func (a *avg[N]) Apply(partialResult, elem N) N {
-	number := a.increment()
-	return (partialResult*(number-1) + elem) / number
-}
-
-func (a *avg[N]) increment() N {
-	a.count = a.count + 1
-	return a.count
-}
-
-type max[T any] struct {
-	comparator func(max, elem T) bool
-}
-
-func Max[T any](comparator func(max, elem T) bool) *max[T] {
-	return &max[T]{
-		comparator: comparator,
+func Avg(values []float64) (float64, error) {
+	var sum float64
+	if len(values) == 0 {
+		return sum, nil
 	}
-}
-
-func (m *max[T]) Apply(partialResult, elem T) T {
-	if m.comparator(partialResult, elem) {
-		return elem
+	for _, v := range values {
+		sum = sum + v
 	}
 
-	return partialResult
+	return sum / float64(len(values)), nil
 }
 
-type min[T any] struct {
-	comparator func(max, elem T) bool
-}
-
-func Min[T any](comparator func(max, elem T) bool) *min[T] {
-	return &min[T]{
-		comparator: comparator,
-	}
-}
-
-func (m *min[T]) Apply(partialResult, elem T) T {
-	if m.comparator(partialResult, elem) {
-		return elem
+func Min[T common.Numbers](values []T) (T, error) {
+	if len(values) == 0 {
+		var zero T
+		return zero, nil
 	}
 
-	return partialResult
+	min := values[0]
+	for _, v := range values[1:] {
+		min = common.Min(min, v)
+	}
+	return min, nil
+}
+
+func Max[T common.Numbers](values []T) (T, error) {
+	if len(values) == 0 {
+		var zero T
+		return zero, nil
+	}
+	max := values[0]
+	for _, v := range values[1:] {
+		max = common.Max(max, v)
+	}
+	return max, nil
+}
+
+type AccumulatorSeq[T any] func(index int, prev T, current T) (T, error)
+
+func SumSeq[T common.Numbers](index int, prev T, current T) (T, error) {
+	return prev + current, nil
+}
+
+func AvgSeq(index int, prev float64, current float64) (float64, error) {
+	return (prev*float64(index-1) + current) / float64(index), nil
+}
+
+func MinSeq[T common.Numbers](index int, prev T, current T) (T, error) {
+	return common.Min(prev, current), nil
+}
+
+func MaxSeq[T common.Numbers](index int, prev T, current T) (T, error) {
+	return common.Max(prev, current), nil
 }

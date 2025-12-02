@@ -93,37 +93,13 @@ func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *p
 	return pairsSlice
 }
 
-func (p *pairsSlice[K, V]) Reduce(identity V, acc accumulator.Accumulator[V]) *pairs[K, V] {
+func (p *pairsSlice[K, V]) Reduce(acc accumulator.Accumulator[V]) *pairs[K, V] {
 	pairs := emptyPairs[K, V]()
 	if pairs.err != nil {
 		pairs.err = p.err
 		return pairs
 	}
 
-	for key, values := range p.m {
-		switch len(values) {
-		case 0:
-			continue
-		case 1:
-			pairs.m[key] = acc.Apply(identity, values[0])
-		default:
-			result := identity
-			for idx := range values {
-				result = acc.Apply(result, values[idx])
-			}
-			pairs.m[key] = result
-		}
-	}
-
-	return pairs
-}
-
-func (p *pairsSlice[K, V]) Aggregate(acc accumulator.Accumulator[V]) *pairs[K, V] {
-	pairs := emptyPairs[K, V]()
-	if pairs.err != nil {
-		pairs.err = p.err
-		return pairs
-	}
 	for key, values := range p.m {
 		switch len(values) {
 		case 0:
@@ -131,9 +107,10 @@ func (p *pairsSlice[K, V]) Aggregate(acc accumulator.Accumulator[V]) *pairs[K, V
 		case 1:
 			pairs.m[key] = values[0]
 		default:
-			result := values[0]
-			for idx := 1; idx < len(values); idx++ {
-				result = acc.Apply(result, values[idx])
+			result, err := acc(values)
+			if err != nil {
+				pairs.err = err
+				return pairs
 			}
 			pairs.m[key] = result
 		}

@@ -129,7 +129,7 @@ func (s *slice[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSl
 	return mapped
 }
 
-func (s *slice[T]) GroupByString(grouper func(elem T) string) *pairsSlice[string, T] {
+func (s *slice[T]) GroupByString(grouper func(elem T) (string, error)) *pairsSlice[string, T] {
 	mapped := emptyMapWithSlices[string, T]()
 	if s.err != nil {
 		mapped.err = s.err
@@ -137,7 +137,11 @@ func (s *slice[T]) GroupByString(grouper func(elem T) string) *pairsSlice[string
 	}
 
 	for idx := range s.slice {
-		key := grouper(s.slice[idx])
+		key, err := grouper(s.slice[idx])
+		if err != nil {
+			mapped.err = err
+			return mapped
+		}
 		mapped.m[key] = append(mapped.m[key], s.slice[idx])
 	}
 
@@ -406,17 +410,13 @@ func (s *slice[T]) NoneMatch(predicate func(elem T) (bool, error)) (bool, error)
 	return true, nil
 }
 
-func (s *slice[T]) Reduce(identity T, accumulator accumulator.Accumulator[T]) (T, error) {
+func (s *slice[T]) Reduce(accumulator accumulator.Accumulator[T]) (T, error) {
 	if s.err != nil {
-		return identity, s.err
+		var zero T
+		return zero, s.err
 	}
 
-	result := identity
-	for idx := range s.slice {
-		result = accumulator.Apply(result, s.slice[idx])
-	}
-
-	return result, nil
+	return accumulator(s.slice)
 }
 
 func (s *slice[T]) ForEach(consumer func(elem T) error) error {

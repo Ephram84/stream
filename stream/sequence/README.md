@@ -339,13 +339,19 @@ noneEven, _ := numbers.NoneMatch(func(x int) (bool, error) {
 
 ## Reduction Operations
 
-### `Reduce(identity T, accumulator accumulator.Accumulator[T]) (T, error)`
+### `Reduce(accumulator accumulator.Accumulator[T]) (T, error)`
 Reduces the sequence to a single value.
 
 ```go
 numbers := sequence.From([]int{1, 2, 3, 4, 5}, nil)
-sum, _ := numbers.Reduce(0, accumulator.NewSumAccumulator[int]())
+sum, _ := numbers.Reduce(accumulator.Sum())
 // sum = 15
+```
+
+```go
+numbers := slice.From([]int{1, 2, 3, 4, 5})
+sum, _ := numbers.Reduce(accumulator.Avg[int]())
+// sum = 3
 ```
 
 ### `ForEach(consumer func(elem T) error) error`
