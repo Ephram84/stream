@@ -249,7 +249,7 @@ type Transaction struct {
 
 func TestSort(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).Sort(common.SortInts).ToSlice()
+	result, err := From(numbers).Sort(common.Sort).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3, 4, 5}, result)
 }
@@ -323,6 +323,40 @@ func TestAvg(t *testing.T) {
 	resultF, err := From(floats).Reduce(accumulator.Avg)
 	assert.NoError(t, err)
 	assert.Equal(t, 3.1, resultF)
+}
+
+func TestCustomAccumulator(t *testing.T) {
+	transactions := []Transaction{
+		{
+			ID:          "T01",
+			Amount:      10.0,
+			BookingDate: 1762038000, // 2025-11-02
+		},
+		{
+			ID:          "T02",
+			Amount:      20.0,
+			BookingDate: 1759356000, // 2025-10-02
+		},
+		{
+			ID:          "T03",
+			Amount:      30.0,
+			BookingDate: 1756764000, // 2025-09-02
+		},
+	}
+
+	oldestTransaction, err := From(transactions).Reduce(func(values []Transaction) (Transaction, error) {
+		oldest := values[0]
+		for _, transaction := range values[1:] {
+			if transaction.BookingDate < oldest.BookingDate {
+				oldest = transaction
+			}
+		}
+
+		return oldest, nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "T03", oldestTransaction.ID)
+	assert.Equal(t, 30.0, oldestTransaction.Amount)
 }
 
 func TestAssociateByString(t *testing.T) {

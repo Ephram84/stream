@@ -99,7 +99,7 @@ func TestReduce(t *testing.T) {
 	}, max)
 }
 
-func TestCount(t *testing.T) {
+func TestCountWithMaps(t *testing.T) {
 	m := map[string][]int{
 		"a": {1, 2, 3},
 		"b": {4, 5},

@@ -25,21 +25,21 @@ type Transaction struct {
 	Tags        []string
 }
 
-func TestErrorSequence(t *testing.T) {
+func TestError(t *testing.T) {
 	numbers := []string{"1", "2", "a", "4"}
 	result, err := From(numbers).MapToInt(common.StringToInt).Filter(isEven).ToSlice()
 	assert.Error(t, err)
 	assert.Empty(t, result)
 }
 
-func TestFilterEvenSequence(t *testing.T) {
+func TestFilterEven(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).
 		Filter(isEven).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{2, 4}, result)
 }
 
-func TestTakeSequence(t *testing.T) {
+func TestTake(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).
 		Take(3).
 		ToSlice()
@@ -47,7 +47,7 @@ func TestTakeSequence(t *testing.T) {
 	assert.Equal(t, []int{1, 2, 3}, result)
 }
 
-func TestSkipSequence(t *testing.T) {
+func TestSkip(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).
 		Skip(2).
 		ToSlice()
@@ -55,7 +55,7 @@ func TestSkipSequence(t *testing.T) {
 	assert.Equal(t, []int{3, 4, 5}, result)
 }
 
-func TestReverseSequence(t *testing.T) {
+func TestReverse(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).
 		Reverse().
 		ToSlice()
@@ -63,7 +63,7 @@ func TestReverseSequence(t *testing.T) {
 	assert.Equal(t, []int{5, 4, 3, 2, 1}, result)
 }
 
-func TestDistinctSequence(t *testing.T) {
+func TestDistinct(t *testing.T) {
 	result, err := From([]int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4}).
 		Distinct().
 		ToSlice()
@@ -71,20 +71,20 @@ func TestDistinctSequence(t *testing.T) {
 	assert.Equal(t, []int{1, 2, 3, 4}, result)
 }
 
-func TestCountSequence(t *testing.T) {
+func TestCount(t *testing.T) {
 	count, err := From([]int{1, 2, 3, 4, 5}).Count()
 	assert.NoError(t, err)
 	assert.Equal(t, 5, count)
 }
 
-func TestFirstSequence(t *testing.T) {
+func TestFirst(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).First()
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 1, *result)
 }
 
-func TestFirstReturnsNilSequence(t *testing.T) {
+func TestFirstReturnsNil(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).Filter(func(elem int) (bool, error) {
 		return elem > 5, nil
 	}).First()
@@ -92,14 +92,14 @@ func TestFirstReturnsNilSequence(t *testing.T) {
 	assert.Nil(t, result)
 }
 
-func TestFirstReturnsElseSequence(t *testing.T) {
+func TestFirstReturnsElse(t *testing.T) {
 	result, err := From([]int{}).First(42)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 42, *result)
 }
 
-func TestAnyMatchSequence(t *testing.T) {
+func TestAnyMatch(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).AnyMatch(func(elem int) (bool, error) {
 		return elem == 3, nil
 	})
@@ -107,7 +107,7 @@ func TestAnyMatchSequence(t *testing.T) {
 	assert.True(t, result)
 }
 
-func TestAnyMatchReturnsFalseSequence(t *testing.T) {
+func TestAnyMatchReturnsFalse(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).AnyMatch(func(elem int) (bool, error) {
 		return elem == 42, nil
 	})
@@ -115,7 +115,7 @@ func TestAnyMatchReturnsFalseSequence(t *testing.T) {
 	assert.False(t, result)
 }
 
-func TestAllMatchSequence(t *testing.T) {
+func TestAllMatch(t *testing.T) {
 	result, err := From([]int{2, 4, 6, 8}).AllMatch(func(elem int) (bool, error) {
 		return elem%2 == 0, nil
 	})
@@ -123,7 +123,7 @@ func TestAllMatchSequence(t *testing.T) {
 	assert.True(t, result)
 }
 
-func TestAllMatchReturnsFalseSequence(t *testing.T) {
+func TestAllMatchReturnsFalse(t *testing.T) {
 	result, err := From([]int{2, 4, 6, 7, 8}).AllMatch(func(elem int) (bool, error) {
 		return elem%2 == 0, nil
 	})
@@ -131,7 +131,7 @@ func TestAllMatchReturnsFalseSequence(t *testing.T) {
 	assert.False(t, result)
 }
 
-func TestNoneMatchSequence(t *testing.T) {
+func TestNoneMatch(t *testing.T) {
 	result, err := From([]int{1, 3, 5, 7}).NoneMatch(func(elem int) (bool, error) {
 		return elem%2 == 0, nil
 	})
@@ -139,7 +139,7 @@ func TestNoneMatchSequence(t *testing.T) {
 	assert.True(t, result)
 }
 
-func TestNoneMatchReturnsFalseSequence(t *testing.T) {
+func TestNoneMatchReturnsFalse(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 5, 7}).NoneMatch(func(elem int) (bool, error) {
 		return elem%2 == 0, nil
 	})
@@ -147,37 +147,37 @@ func TestNoneMatchReturnsFalseSequence(t *testing.T) {
 	assert.False(t, result)
 }
 
-func TestReduceSumSequence(t *testing.T) {
+func TestReduceSum(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).Reduce(accumulator.SumSeq)
 	assert.NoError(t, err)
 	assert.Equal(t, 15, result)
 }
 
-func TestReduceAvgSequence(t *testing.T) {
+func TestReduceAvg(t *testing.T) {
 	result, err := From([]float64{2.1, 4.2, 6.3, 8.4}).Reduce(accumulator.AvgSeq)
 	assert.NoError(t, err)
 	assert.Equal(t, 5.25, result)
 }
 
-func TestReduceMinSequence(t *testing.T) {
+func TestReduceMin(t *testing.T) {
 	result, err := From([]int{5, 3, 8, 1, 4}).Reduce(accumulator.MinSeq)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, result)
 }
 
-func TestReduceMaxSequence(t *testing.T) {
+func TestReduceMax(t *testing.T) {
 	result, err := From([]int{5, 3, 8, 1, 4}).Reduce(accumulator.MaxSeq)
 	assert.NoError(t, err)
 	assert.Equal(t, 8, result)
 }
 
-func TestConcatSequences(t *testing.T) {
+func TestConcat(t *testing.T) {
 	result, err := From([]int{4, 5}).Concat(From([]int{6, 7, 8})).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{4, 5, 6, 7, 8}, result)
 }
 
-func TestMapSequence(t *testing.T) {
+func TestMap(t *testing.T) {
 	numbers := From([]int{1, 2, 3, 4, 5})
 	result, err := MapSeq(numbers, func(elem int) (string, error) {
 		return "Number: " + string(rune('0'+elem)), nil
@@ -186,7 +186,7 @@ func TestMapSequence(t *testing.T) {
 	assert.Equal(t, []string{"Number: 1", "Number: 2", "Number: 3", "Number: 4", "Number: 5"}, result)
 }
 
-func TestMapSequence2(t *testing.T) {
+func TestMap2(t *testing.T) {
 	numbers := From([]int{1, 2, 3, 4, 5})
 	result, err := numbers.Map(func(elem int) (int, error) {
 		return elem * 2, nil
@@ -195,7 +195,7 @@ func TestMapSequence2(t *testing.T) {
 	assert.Equal(t, []int{2, 4, 6, 8, 10}, result)
 }
 
-func TestGroupBySequence(t *testing.T) {
+func TestGroupBy(t *testing.T) {
 	numbers := From([]int{1, 2, 3, 4, 5, 6})
 	result := GroupBySeq(numbers, func(elem int) (string, error) {
 		if elem%2 == 0 {
@@ -210,7 +210,7 @@ func TestGroupBySequence(t *testing.T) {
 	assert.Equal(t, []int{2, 4, 6}, m["even"])
 }
 
-func TestFlatMapSequence(t *testing.T) {
+func TestFlatMap(t *testing.T) {
 	words := From([]string{"hi", "go"})
 
 	result, err := FlatMapSeq(words, func(elem string) (*seq[rune], error) {

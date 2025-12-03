@@ -7,3 +7,7 @@ type Key interface {
 type Numbers interface {
 	~int | ~int64 | ~float64
 }
+
+type Ordered interface {
+	~int | ~int64 | ~float64 | ~string
+}

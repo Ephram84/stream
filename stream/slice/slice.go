@@ -167,7 +167,7 @@ func (s *slice[T]) AssociateByString(mapper func(elem T) (string, error)) *pairs
 	return p
 }
 
-func (s *slice[T]) Sort(sortFunc func(slice []T) func(i, j int) bool) *slice[T] {
+func (s *slice[T]) Sort(sortFunc common.SortFunc[T]) *slice[T] {
 	if s.err != nil {
 		return s
 	}
