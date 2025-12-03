@@ -287,18 +287,12 @@ noneEven, _ := numbers.NoneMatch(func(x int) (bool, error) {
 ## Reduction Operations
 
 ### `Reduce(accumulator accumulator.Accumulator[T]) (T, error)`
-Reduces the stream to a single value.
+Reduces the stream to a single value. See [accumulator](stream/accumulator/README.md#1-batch-accumulator-accumulatort-any)
 
 ```go
 numbers := slice.From([]int{1, 2, 3, 4, 5})
-sum, _ := numbers.Reduce(accumulator.Sum())
+sum, _ := numbers.Reduce(accumulator.Sum)
 // sum = 15
-```
-
-```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-sum, _ := numbers.Reduce(accumulator.Avg[int]())
-// sum = 3
 ```
 
 ### `ForEach(consumer func(elem T) error) error`

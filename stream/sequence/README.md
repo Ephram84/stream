@@ -339,19 +339,13 @@ noneEven, _ := numbers.NoneMatch(func(x int) (bool, error) {
 
 ## Reduction Operations
 
-### `Reduce(accumulator accumulator.Accumulator[T]) (T, error)`
-Reduces the sequence to a single value.
+### `Reduce(accumulator accumulator.AccumulatorSeq[T]) (T, error)`
+Reduces the sequence to a single value. See [accumulator](stream/accumulator/README.md#2-sequential-accumulator-accumulatorseqt-any)
 
 ```go
 numbers := sequence.From([]int{1, 2, 3, 4, 5}, nil)
-sum, _ := numbers.Reduce(accumulator.Sum())
+sum, _ := numbers.Reduce(accumulator.SumSeq)
 // sum = 15
-```
-
-```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-sum, _ := numbers.Reduce(accumulator.Avg[int]())
-// sum = 3
 ```
 
 ### `ForEach(consumer func(elem T) error) error`
