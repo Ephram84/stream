@@ -1,13 +1,15 @@
 package common
 
-func SortInts(arr []int) func(i, j int) bool {
+type SortFunc[T any] func(slice []T) func(i, j int) bool
+
+func Sort[T Ordered](arr []T) func(i, j int) bool {
 	return func(i, j int) bool {
 		return arr[i] < arr[j]
 	}
 }
 
-func SortFloat(arr []float64) func(i, j int) bool {
+func SortDesc[T Ordered](arr []T) func(i, j int) bool {
 	return func(i, j int) bool {
-		return arr[i] < arr[j]
+		return arr[i] > arr[j]
 	}
 }

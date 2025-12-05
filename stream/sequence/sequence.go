@@ -1,6 +1,10 @@
 package sequence
 
 import (
+	"io"
+	"os"
+	"strings"
+
 	"github.com/Ephram84/stream/stream/accumulator"
 	"github.com/Ephram84/stream/stream/common"
 	"github.com/Ephram84/stream/stream/tupel"
@@ -27,6 +31,28 @@ func From[T any](slice []T, errs ...error) *seq[T] {
 			return zero, false, nil
 		},
 	}
+}
+
+func FromFile(path string) *seq[string] {
+	f, err := os.Open(path)
+	if err != nil {
+		return &seq[string]{
+			next: func() (string, bool, error) {
+				return "", false, err
+			},
+		}
+	}
+	input, err := io.ReadAll(f)
+	if err != nil {
+		return &seq[string]{
+			next: func() (string, bool, error) {
+				return "", false, err
+			},
+		}
+	}
+
+	fields := strings.Fields(string(input))
+	return From(fields)
 }
 
 func (s *seq[T]) Filter(filter func(elem T) (bool, error)) *seq[T] {
@@ -475,7 +501,10 @@ func (s *seq[T]) NoneMatch(predicate func(elem T) (bool, error)) (bool, error) {
 	return true, nil
 }
 
-func (s *seq[T]) Reduce(identity T, acc accumulator.Accumulator[T]) (T, error) {
+func (s *seq[T]) Reduce(acc accumulator.AccumulatorSeq[T]) (T, error) {
+	var identity T
+	var count int
+	var first = true
 	for {
 		val, ok, err := s.next()
 		if err != nil {
@@ -484,8 +513,16 @@ func (s *seq[T]) Reduce(identity T, acc accumulator.Accumulator[T]) (T, error) {
 		if !ok {
 			break
 		}
-		newValue := acc.Apply(identity, val)
-		identity = newValue
+		count++
+		if first {
+			identity = val
+			first = false
+			continue
+		}
+		identity, err = acc(count, identity, val)
+		if err != nil {
+			return identity, err
+		}
 	}
 	return identity, nil
 }

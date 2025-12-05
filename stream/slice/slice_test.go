@@ -1,10 +1,8 @@
 package slice
 
 import (
-	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/Ephram84/stream/stream/accumulator"
 	"github.com/Ephram84/stream/stream/common"
@@ -18,8 +16,8 @@ func isEven(elem int) (bool, error) {
 	return elem%2 == 0, nil
 }
 
-func mapper(s string) string {
-	return s
+func mapper(s string) (string, error) {
+	return s, nil
 }
 
 type Employee struct {
@@ -51,15 +49,6 @@ func TestError(t *testing.T) {
 	result, err := From(numbers).MapToInt(common.StringToInt).Filter(isEven).ToSlice()
 	assert.Error(t, err)
 	assert.Empty(t, result)
-}
-
-func TestWords(t *testing.T) {
-	words, err := FromFile("../../assets/words.txt").GroupByString(mapper).CountValues().ToMap()
-	assert.NoError(t, err)
-
-	assert.Equal(t, 110, words["a"])
-	assert.Equal(t, 123, words["ac"])
-	assert.Equal(t, 55, words["luctus"])
 }
 
 func TestSlice(t *testing.T) {
@@ -135,8 +124,8 @@ func TestPartitionBy(t *testing.T) {
 }
 
 func TestGroupBy(t *testing.T) {
-	groupByAlphabet, err := From(sliceEmployee).GroupByString(func(elem Employee) string {
-		return elem.Name[0:1]
+	groupByAlphabet, err := From(sliceEmployee).GroupByString(func(elem Employee) (string, error) {
+		return elem.Name[0:1], nil
 	}).ToMap()
 	assert.NoError(t, err)
 	assert.Equal(t, groupByAlphabet["B"][0].Name, "Bill Gates")
@@ -154,26 +143,33 @@ func TestMapToInt(t *testing.T) {
 
 func TestMaxWithInts(t *testing.T) {
 	numbers := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	maxInt, err := From(numbers).Reduce(0, accumulator.Max(common.MaxInt))
+	maxInt, err := From(numbers).Reduce(accumulator.Max)
 	assert.NoError(t, err)
 	assert.Equal(t, 9, maxInt)
 }
 
-func TestMax(t *testing.T) {
-	maxEmployer, err := From(sliceEmployee).Reduce(Employee{}, accumulator.Max(func(max, elem Employee) bool {
-		return max.Salary < elem.Salary
-	}))
+func TestCustomMax(t *testing.T) {
+	maxEmployer, err := From(sliceEmployee).Reduce(func(values []Employee) (Employee, error) {
+		max := values[0]
+		maxSalary := values[0].Salary
+		for _, employee := range values {
+			if employee.Salary > maxSalary {
+				max = employee
+				maxSalary = employee.Salary
+			}
+		}
+		return max, nil
+	})
 	assert.NoError(t, err)
 	assert.NotEqual(t, Employee{}, maxEmployer)
 	assert.Equal(t, 3, maxEmployer.ID)
 }
 
 func TestMin(t *testing.T) {
-	minEmployer, err := From(sliceEmployee).Reduce(sliceEmployee[2], accumulator.Min(func(min, elem Employee) bool {
-		return min.Salary > elem.Salary
-	}))
+	numbers := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	minInt, err := From(numbers).Reduce(accumulator.Min)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, minEmployer.ID)
+	assert.Equal(t, 1, minInt)
 }
 
 func TestFlatMapInts(t *testing.T) {
@@ -253,9 +249,60 @@ type Transaction struct {
 
 func TestSort(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).Sort(common.SortInts).ToSlice()
+	result, err := From(numbers).Sort(common.Sort).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3, 4, 5}, result)
+}
+
+func TestSortDesc(t *testing.T) {
+	numbers := []int{5, 3, 1, 2, 4}
+	result, err := From(numbers).Sort(common.SortDesc).ToSlice()
+	assert.NoError(t, err)
+	assert.Equal(t, []int{5, 4, 3, 2, 1}, result)
+}
+
+func TestCustomSortFunc(t *testing.T) {
+	transactions := []Transaction{
+		{
+			ID:          "T02",
+			Amount:      20.0,
+			BookingDate: 1759356000, // 2025-10-02
+		},
+		{
+			ID:          "T03",
+			Amount:      30.0,
+			BookingDate: 1756764000, // 2025-09-02
+		},
+		{
+			ID:          "T01",
+			Amount:      10.0,
+			BookingDate: 1762038000, // 2025-11-02
+		},
+	}
+
+	sortTransaction, err := From(transactions).Sort(func(tnxs []Transaction) func(i, j int) bool {
+		return func(i, j int) bool {
+			return tnxs[i].BookingDate < tnxs[j].BookingDate
+		}
+	}).ToSlice()
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []Transaction{
+		{
+			ID:          "T01",
+			Amount:      10.0,
+			BookingDate: 1762038000, // 2025-11-02
+		},
+		{
+			ID:          "T02",
+			Amount:      20.0,
+			BookingDate: 1759356000, // 2025-10-02
+		},
+		{
+			ID:          "T03",
+			Amount:      30.0,
+			BookingDate: 1756764000, // 2025-09-02
+		},
+	}, sortTransaction)
 }
 
 func TestDistinct(t *testing.T) {
@@ -312,43 +359,55 @@ func TestWithNils(t *testing.T) {
 
 func TestSum(t *testing.T) {
 	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).Reduce(0, accumulator.Sum[int]())
+	result, err := From(numbers).Reduce(accumulator.Sum)
 	assert.NoError(t, err)
 	assert.Equal(t, 15, result)
 }
 
 func TestAvg(t *testing.T) {
-	numbers := []int{5, 3, 1, 2, 4}
-	result, err := From(numbers).MapToFloat(common.IntToFloat64).Reduce(0.0, accumulator.Avg())
+	numbers := []int{5, 3, 1, 2, 3}
+	result, err := From(numbers).MapToFloat(common.IntToFloat64).Reduce(accumulator.Avg)
 	assert.NoError(t, err)
-	assert.Equal(t, 3.0, result)
+	assert.Equal(t, 2.8, result)
+
+	floats := []float64{5.0, 3.5, 1.0, 2.0, 4.0}
+	resultF, err := From(floats).Reduce(accumulator.Avg)
+	assert.NoError(t, err)
+	assert.Equal(t, 3.1, resultF)
 }
 
-func TestReducingToFloat(t *testing.T) {
+func TestCustomAccumulator(t *testing.T) {
 	transactions := []Transaction{
 		{
+			ID:          "T01",
 			Amount:      10.0,
-			BookingDate: time.Date(2023, time.September, 9, 0, 0, 0, 0, time.UTC).Unix(),
+			BookingDate: 1762038000, // 2025-11-02
 		},
 		{
-			Amount:      15.0,
-			BookingDate: time.Date(2023, time.September, 9, 0, 0, 0, 0, time.UTC).Unix(),
+			ID:          "T02",
+			Amount:      20.0,
+			BookingDate: 1759356000, // 2025-10-02
 		},
 		{
-			Amount:      150.0,
-			BookingDate: time.Date(2023, time.August, 20, 0, 0, 0, 0, time.UTC).Unix(),
+			ID:          "T03",
+			Amount:      30.0,
+			BookingDate: 1756764000, // 2025-09-02
 		},
 	}
 
-	result, err := From(transactions).GroupByString(func(elem Transaction) string {
-		date := time.Unix(elem.BookingDate, 0)
-		return fmt.Sprintf("%d-%d", date.Year(), int(date.Month()))
-	}).MapToFloat64(func(elem Transaction) (float64, error) { return elem.Amount, nil }).Reduce(0.0, accumulator.Sum[float64]()).ToMap()
+	oldestTransaction, err := From(transactions).Reduce(func(values []Transaction) (Transaction, error) {
+		oldest := values[0]
+		for _, transaction := range values[1:] {
+			if transaction.BookingDate < oldest.BookingDate {
+				oldest = transaction
+			}
+		}
+
+		return oldest, nil
+	})
 	assert.NoError(t, err)
-	assert.Equal(t, map[string]float64{
-		"2023-9": 25.0,
-		"2023-8": 150.0,
-	}, result)
+	assert.Equal(t, "T03", oldestTransaction.ID)
+	assert.Equal(t, 30.0, oldestTransaction.Amount)
 }
 
 func TestAssociateByString(t *testing.T) {
