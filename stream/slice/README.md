@@ -358,23 +358,23 @@ if err != nil {
 ## Free Funcitons
 Unfortunately, Go does not allow something like `func (s *slice[T]) Map[R any](mapper func(elem T) (R, error))`. Therefore, there are a few helper functions, where T becomes R
 
-### `MapSlice[T, R any](s *slice[T], mapper func(elem T) (R, error))`
+### `Map[T, R any](s *slice[T], mapper func(elem T) (R, error))`
 Maps a slice to another type T -> R
 ```go
 numbers := slice.From([]int{1, 2, 3, 4, 5})
-result, _ := slice.MapSlice(numbers, func(elem int) (string, error) {
+result, _ := slice.Map(numbers, func(elem int) (string, error) {
 	return "Number: " + string(rune('0'+elem)), nil
 }).ToSlice()
 // result = ["Number: 1", "Number: 2", "Number: 3", "Number: 4", "Number: 5"]
 ```
 
-### `ZipSlices[T1, T2 any](s1 *slice[T1], s2 *slice[T2])`
+### `Zip[T1, T2 any](s1 *slice[T1], s2 *slice[T2])`
 Combines two streams into tuples.
 
 ```go
 numbers := slice.From([]int{1, 2, 3})
 letters := slice.From([]string{"a", "b", "c"})
-result, _ := slice.ZipSlices(numbers, letters).ToSlice()
+result, _ := slice.Zip(numbers, letters).ToSlice()
 // result = [(1,"a"), (2,"b"), (3,"c")]
 ```
 
@@ -423,4 +423,67 @@ result, _ := slice.FromMapWithSlices(map[string][]string{
 	"b": {"banana"},
 }).CountValues().toMap()
 // result = map["a": 2, "b": 1]
+```
+
+### `Flatten()`
+Returns a slice of all values.
+
+```go
+result, _ := slice.FromMap(map[string]int{
+	"a": 1,
+	"b": 2,
+	"c": 3,
+}).Flatten().ToSlice()
+// result = [1, 2, 3]
+```
+
+```go
+result, _ := slice.FromMapWithSlices(map[string][]int{
+		"first":  {0, 1, 2},
+		"second": {3, 4, 5},
+		"third":  {6},
+	}).Flatten().ToSlice()
+// result = [0, 1, 2, 3, 4, 5, 6]
+```
+
+### `Keys()`
+Returns a slice of all keys.
+
+```go
+result, _ := FromMap(map[string]int{
+	"a": 1,
+	"b": 2,
+	"c": 3,
+}).Keys().ToSlice()
+// result = ["a", "b", "c"]
+```
+
+```go
+result, _ := FromMapWithSlices(map[string][]int{
+	"first":  {0, 1, 2},
+	"second": {3, 4, 5},
+	"third":  {6},
+}).Keys().ToSlice()
+// result = ["first", "second", "third"]
+```
+
+### `ToMap()`
+Converts the stream back to a regular Go map.
+
+```go
+result, _ := FromMap(map[string]int{
+	"a": 1,
+	"b": 2,
+	"c": 3,
+}).ToMap()
+// result = map["a": 1, "b": 2, "c": 3]
+```
+
+```go
+result, _ := FromMapWithSlices(map[string][]int{
+	"first":  {0, 1, 2},
+	"second": {3, 4, 5},
+	"third":  {6},
+}).ToMap()
+// result = map["first": {0, 1, 2}, "second": {3, 4, 5}, "third": {6}]
 ```

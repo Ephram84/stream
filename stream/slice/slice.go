@@ -94,19 +94,19 @@ func (s *slice[T]) Map(mapper func(elem T) (T, error)) *slice[T] {
 }
 
 func (s *slice[T]) MapToInt(mapper func(elem T) (int, error)) *slice[int] {
-	return MapSlice(s, mapper)
+	return Map(s, mapper)
 }
 
 func (s *slice[T]) MapToInt64(mapper func(elem T) (int64, error)) *slice[int64] {
-	return MapSlice(s, mapper)
+	return Map(s, mapper)
 }
 
 func (s *slice[T]) MapToFloat(mapper func(elem T) (float64, error)) *slice[float64] {
-	return MapSlice(s, mapper)
+	return Map(s, mapper)
 }
 
 func (s *slice[T]) MapToString(mapper func(elem T) (string, error)) *slice[string] {
-	return MapSlice(s, mapper)
+	return Map(s, mapper)
 }
 
 func (s *slice[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSlice[bool, T] {
@@ -435,7 +435,7 @@ func (s *slice[T]) ForEach(consumer func(elem T) error) error {
 
 // free functions
 
-func MapSlice[T, R any](s *slice[T], mapper func(elem T) (R, error)) *slice[R] {
+func Map[T, R any](s *slice[T], mapper func(elem T) (R, error)) *slice[R] {
 	if s == nil {
 		return emptySlice[R](0)
 	}
@@ -458,7 +458,7 @@ func MapSlice[T, R any](s *slice[T], mapper func(elem T) (R, error)) *slice[R] {
 	return newSlice
 }
 
-func FlatMapSlice[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error)) *slice[T2] {
+func FlatMap[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error)) *slice[T2] {
 	newSlice := emptySlice[T2](0)
 	if s == nil {
 		return newSlice
@@ -482,7 +482,7 @@ func FlatMapSlice[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error)) 
 	return newSlice
 }
 
-func ZipSlices[T1, T2 any](s1 *slice[T1], s2 *slice[T2]) *slice[tupel.Tupel[T1, T2]] {
+func Zip[T1, T2 any](s1 *slice[T1], s2 *slice[T2]) *slice[tupel.Tupel[T1, T2]] {
 	newSlice := &slice[tupel.Tupel[T1, T2]]{}
 	if s1 == nil || s2 == nil {
 		return newSlice
@@ -506,7 +506,7 @@ func ZipSlices[T1, T2 any](s1 *slice[T1], s2 *slice[T2]) *slice[tupel.Tupel[T1, 
 	return newSlice
 }
 
-func GroupBySlice[K common.Key, T any](s *slice[T], keyMapper func(elem T) (K, error)) *pairsSlice[K, T] {
+func GroupBy[K common.Key, T any](s *slice[T], keyMapper func(elem T) (K, error)) *pairsSlice[K, T] {
 	pairs := emptyMapWithSlices[K, T]()
 	if s == nil {
 		return pairs

@@ -179,7 +179,7 @@ func TestFlatMapInts(t *testing.T) {
 		{7, 8, 9},
 	}
 
-	ints, err := FlatMapSlice(From(intSlice), func(elem []int) ([]int, error) {
+	ints, err := FlatMap(From(intSlice), func(elem []int) ([]int, error) {
 		return elem, nil
 	}).ToSlice()
 	assert.NoError(t, err)
@@ -214,7 +214,7 @@ func TestFlatMap(t *testing.T) {
 		},
 	}
 
-	numberOfTransactions, err := FlatMapSlice(From(accounts), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMap(From(accounts), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
@@ -226,7 +226,7 @@ func TestFlatMap(t *testing.T) {
 func TestFlatMapWithEmptyAccounts(t *testing.T) {
 	accounts := []Account{}
 
-	numberOfTransactions, err := FlatMapSlice(From(accounts), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMap(From(accounts), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
@@ -453,7 +453,7 @@ func TestConcatSlices(t *testing.T) {
 }
 
 func TestZipSlices(t *testing.T) {
-	result, err := ZipSlices(From([]int{1, 2, 3}), From([]string{"a", "b", "c", "d"})).ToSlice()
+	result, err := Zip(From([]int{1, 2, 3}), From([]string{"a", "b", "c", "d"})).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []tupel.Tupel[int, string]{
 		{First: 1, Second: "a"},
@@ -464,7 +464,7 @@ func TestZipSlices(t *testing.T) {
 
 func TestGroupBySlice(t *testing.T) {
 	numbers := From([]int{1, 2, 3, 4, 5, 6})
-	result := GroupBySlice(numbers, func(elem int) (string, error) {
+	result := GroupBy(numbers, func(elem int) (string, error) {
 		if elem%2 == 0 {
 			return "even", nil
 		}
