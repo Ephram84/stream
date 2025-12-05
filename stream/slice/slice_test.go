@@ -254,6 +254,57 @@ func TestSort(t *testing.T) {
 	assert.Equal(t, []int{1, 2, 3, 4, 5}, result)
 }
 
+func TestSortDesc(t *testing.T) {
+	numbers := []int{5, 3, 1, 2, 4}
+	result, err := From(numbers).Sort(common.SortDesc).ToSlice()
+	assert.NoError(t, err)
+	assert.Equal(t, []int{5, 4, 3, 2, 1}, result)
+}
+
+func TestCustomSortFunc(t *testing.T) {
+	transactions := []Transaction{
+		{
+			ID:          "T02",
+			Amount:      20.0,
+			BookingDate: 1759356000, // 2025-10-02
+		},
+		{
+			ID:          "T03",
+			Amount:      30.0,
+			BookingDate: 1756764000, // 2025-09-02
+		},
+		{
+			ID:          "T01",
+			Amount:      10.0,
+			BookingDate: 1762038000, // 2025-11-02
+		},
+	}
+
+	sortTransaction, err := From(transactions).Sort(func(tnxs []Transaction) func(i, j int) bool {
+		return func(i, j int) bool {
+			return tnxs[i].BookingDate < tnxs[j].BookingDate
+		}
+	}).ToSlice()
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []Transaction{
+		{
+			ID:          "T01",
+			Amount:      10.0,
+			BookingDate: 1762038000, // 2025-11-02
+		},
+		{
+			ID:          "T02",
+			Amount:      20.0,
+			BookingDate: 1759356000, // 2025-10-02
+		},
+		{
+			ID:          "T03",
+			Amount:      30.0,
+			BookingDate: 1756764000, // 2025-09-02
+		},
+	}, sortTransaction)
+}
+
 func TestDistinct(t *testing.T) {
 	numbers := []int{5, 5, 3, 1, 1, 2, 4}
 	result, err := From(numbers).Distinct(common.Eq).ToSlice()

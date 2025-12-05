@@ -29,8 +29,8 @@ Creates a stream of strings from a file (splits by whitespace).
 
 ```go
 // Assuming a file "data.txt" contains: "apple banana cherry"
-words := slice.FromFile("data.txt")
-result, _ := words.ToSlice() // ["apple", "banana", "cherry"]
+words, _ := slice.FromFile("data.txt").ToSlice()
+// words = ["apple", "banana", "cherry"]
 ```
 
 ## Transformation Operations
@@ -39,44 +39,38 @@ result, _ := words.ToSlice() // ["apple", "banana", "cherry"]
 Filters elements based on a predicate.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5, 6})
-evens := numbers.Filter(func(x int) (bool, error) {
+evens, _ := slice.From([]int{1, 2, 3, 4, 5, 6}).Filter(func(x int) (bool, error) {
     return x%2 == 0, nil
-})
-result, _ := evens.ToSlice() // [2, 4, 6]
+}).ToSlice()
+// evens = [2, 4, 6]
 ```
 
 ### `Map(mapper func(elem T) (T, error))`
 Transforms each element using a mapper function.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4})
-squared := numbers.Map(func(x int) (int, error) {
+result, _ := slice.From([]int{1, 2, 3, 4}).Map(func(x int) (int, error) {
     return x * x, nil
-})
-result, _ := squared.ToSlice() // [1, 4, 9, 16]
+}).ToSlice()
+// result = [1, 4, 9, 16]
 ```
 
 ### `MapToInt(mapper func(elem T) (int, error))`
 Maps elements to integers.
 
 ```go
-words := slice.From([]string{"a", "bb", "ccc"})
-lengths := words.MapToInt(func(s string) (int, error) {
+result, _ := slice.From([]string{"a", "bb", "ccc"}).MapToInt(func(s string) (int, error) {
     return len(s), nil
-})
-result, _ := lengths.ToSlice() // [1, 2, 3]
+}).ToSlice()
+// result = [1, 2, 3]
 ```
 
 ### `MapToString(mapper func(elem T) (string, error))`
 Maps elements to strings.
 
 ```go
-numbers := slice.From([]int{1, 2, 3})
-strings := numbers.MapToString(func(x int) (string, error) {
-    return fmt.Sprintf("num_%d", x), nil
-})
-result, _ := strings.ToSlice() // ["num_1", "num_2", "num_3"]
+result, _ := slice.From([]int{1, 2, 3}).MapToString(common.IntToString).ToSlice()
+// result = ["1", "2", "3"]
 ```
 
 ### `FlatMapSlice[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error))`
@@ -84,10 +78,23 @@ Flattens nested slices.
 
 ```go
 words := slice.From([]string{"hello", "world"})
-chars := slice.FlatMapSlice(words, func(s string) ([]string, error) {
+result, _ := slice.FlatMapSlice(words, func(s string) ([]string, error) {
     return strings.Split(s, ""), nil
-})
-result, _ := chars.ToSlice() // ["h", "e", "l", "l", "o", "w", "o", "r", "l", "d"]
+}).ToSlice()
+// result = ["h", "e", "l", "l", "o", "w", "o", "r", "l", "d"]
+```
+
+```go
+    intSlice := [][]int{
+		{1, 2, 3},
+		{4, 5, 6},
+		{7, 8, 9},
+	}
+
+	result, _ := FlatMapSlice(From(intSlice), func(elem []int) ([]int, error) {
+		return elem, nil
+	}).ToSlice()
+    // result = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 ## Ordering Operations
@@ -96,22 +103,67 @@ result, _ := chars.ToSlice() // ["h", "e", "l", "l", "o", "w", "o", "r", "l", "d
 Sorts elements using a custom comparator.
 
 ```go
-numbers := slice.From([]int{5, 2, 8, 1, 9})
-sorted := numbers.Sort(func(slice []int) func(i, j int) bool {
-    return func(i, j int) bool {
-        return slice[i] < slice[j]
-    }
-})
-result, _ := sorted.ToSlice() // [1, 2, 5, 8, 9]
+result, _ := slice.From([]int{5, 2, 8, 1, 9}).Sort(common.Sort).ToSlice()
+// result = [1, 2, 5, 8, 9]
 ```
+
+Sorts desc.
+```go
+result, _ := slice.From([]int{5, 2, 8, 1, 9}).Sort(common.SortDesc).ToSlice()
+// result = [9, 8, 5, 2, 1]
+```
+
+Custom sort function.
+```go
+transactions := []Transaction{
+		{
+			ID:          "T02",
+			Amount:      20.0,
+			BookingDate: 1759356000, // 2025-10-02
+		},
+		{
+			ID:          "T03",
+			Amount:      30.0,
+			BookingDate: 1756764000, // 2025-09-02
+		},
+		{
+			ID:          "T01",
+			Amount:      10.0,
+			BookingDate: 1762038000, // 2025-11-02
+		},
+	}
+
+	sortTransaction, _ := slice.From(transactions).Sort(func(tnxs []Transaction) func(i, j int) bool {
+		return func(i, j int) bool {
+			return tnxs[i].BookingDate < tnxs[j].BookingDate
+		}
+	}).ToSlice()
+    // sortTransactions = []Transaction{
+	// 	{
+	// 		ID:          "T01",
+	// 		Amount:      10.0,
+	// 		BookingDate: 1762038000, // 2025-11-02
+	// 	},
+	// 	{
+	// 		ID:          "T02",
+	// 		Amount:      20.0,
+	// 		BookingDate: 1759356000, // 2025-10-02
+	// 	},
+	// 	{
+	// 		ID:          "T03",
+	// 		Amount:      30.0,
+	// 		BookingDate: 1756764000, // 2025-09-02
+	// 	},
+	// }
+```
+
 
 ### `Reverse()`
 Reverses the order of elements.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-reversed := numbers.Reverse()
-result, _ := reversed.ToSlice() // [5, 4, 3, 2, 1]
+result, _ := slice.From([]int{1, 2, 3, 4, 5}).Reverse().ToSlice()
+// result = [5, 4, 3, 2, 1]
 ```
 
 ## Slicing Operations
@@ -120,18 +172,16 @@ result, _ := reversed.ToSlice() // [5, 4, 3, 2, 1]
 Takes the first n elements.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-first3 := numbers.Take(3)
-result, _ := first3.ToSlice() // [1, 2, 3]
+result,  := slice.From([]int{1, 2, 3, 4, 5}).Take(3).ToSlice()
+// result = [1, 2, 3]
 ```
 
 ### `Skip(n int)`
 Skips the first n elements.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-afterFirst2 := numbers.Skip(2)
-result, _ := afterFirst2.ToSlice() // [3, 4, 5]
+result, _ := slice.From([]int{1, 2, 3, 4, 5}).Skip(2).ToSlice()
+// result = [3, 4, 5]
 ```
 
 ## Set Operations
@@ -140,11 +190,8 @@ result, _ := afterFirst2.ToSlice() // [3, 4, 5]
 Removes duplicate elements.
 
 ```go
-numbers := slice.From([]int{1, 2, 2, 3, 3, 3, 4})
-unique := numbers.Distinct(func(a, b int) bool {
-    return a == b
-})
-result, _ := unique.ToSlice() // [1, 2, 3, 4]
+result, _ := slice.From([]int{1, 2, 2, 3, 3, 3, 4}).Distinct(common.Eq).ToSlice()
+// result = [1, 2, 3, 4]
 ```
 
 ### `Concat(slices ...*slice[T])`
@@ -154,8 +201,8 @@ Concatenates multiple streams.
 slice1 := slice.From([]int{1, 2, 3})
 slice2 := slice.From([]int{4, 5, 6})
 slice3 := slice.From([]int{7, 8, 9})
-combined := slice1.Concat(slice2, slice3)
-result, _ := combined.ToSlice() // [1, 2, 3, 4, 5, 6, 7, 8, 9]
+result, _ := slice1.Concat(slice2, slice3).ToSlice() 
+// result = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 ## Grouping Operations
@@ -164,33 +211,30 @@ result, _ := combined.ToSlice() // [1, 2, 3, 4, 5, 6, 7, 8, 9]
 Groups elements by string keys.
 
 ```go
-words := slice.From([]string{"apple", "banana", "apricot", "blueberry"})
-grouped := words.GroupByString(func(s string) string {
+result, _ := slice.From([]string{"apple", "banana", "apricot", "blueberry"}).GroupByString(func(s string) string {
     return string(s[0]) // Group by first letter
-})
-// Result: map["a": ["apple", "apricot"], "b": ["banana", "blueberry"]]
+}).ToMap()
+// result = map["a": ["apple", "apricot"], "b": ["banana", "blueberry"]]
 ```
 
 ### `PartitioningBy(predicate func(elem T) (bool, error))`
 Partitions elements into two groups based on a predicate.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5, 6})
-partitioned := numbers.PartitioningBy(func(x int) (bool, error) {
+result, _ := slice.From([]int{1, 2, 3, 4, 5, 6}).PartitioningBy(func(x int) (bool, error) {
     return x%2 == 0, nil
-})
-// Result: map[true: [2, 4, 6], false: [1, 3, 5]]
+}).ToMap()
+// result = map[true: [2, 4, 6], false: [1, 3, 5]]
 ```
 
 ### `AssociateByString(mapper func(elem T) (string, error))`
 Creates a map with string keys.
 
 ```go
-words := slice.From([]string{"cat", "dog", "elephant"})
-associated := words.AssociateByString(func(s string) (string, error) {
+result, _ := slice.From([]string{"cat", "dog", "elephant"}).AssociateByString(func(s string) (string, error) {
     return string(s[0]), nil
-})
-// Result: map["c": "cat", "d": "dog", "e": "elephant"]
+}).ToMap()
+// result = map["c": "cat", "d": "dog", "e": "elephant"]
 ```
 
 ## Terminal Operations
@@ -209,47 +253,50 @@ result, err := slice.ToSlice() // [2, 3], nil
 Returns the number of elements.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-count, _ := numbers.Count() // 5
+result, _ := slice.From([]int{1, 2, 3, 4, 5}).Count()
+// result = 5
 ```
 
 ### `First(orElse ...T) (*T, error)`
 Returns the first element or a default value.
 
 ```go
-numbers := slice.From([]int{1, 2, 3})
-first, _ := numbers.First() // *1
+first, _ := slice.From([]int{1, 2, 3}).First()
+// first = *1
 
-empty := slice.From([]int{})
-firstOrDefault, _ := empty.First(99) // *99
+firstOrDefault, _ := slice.From([]int{}).First(99)
+// firstOrDefault = *99
 ```
 
 ### `Last(orElse ...T) (*T, error)`
 Returns the last element or a default value.
 
 ```go
-numbers := slice.From([]int{1, 2, 3})
-last, _ := numbers.Last() // *3
+last, _ := slice.From([]int{1, 2, 3}).Last()
+// last = *3
+
+lastOrDefault, _ slice.From([]int{}).Last(99)
+// lastOrDefault = *99
 ```
 
 ### `FirstOrNil(predicate func(elem T) (bool, error)) (*T, error)`
 Returns the first element matching a predicate.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-firstEven, _ := numbers.FirstOrNil(func(x int) (bool, error) {
+result, _ := slice.From([]int{1, 2, 3, 4, 5}).FirstOrNil(func(x int) (bool, error) {
     return x%2 == 0, nil
-}) // *2
+})
+// result = *2
 ```
 
 ### `LastOrNil(predicate func(elem T) (bool, error)) (*T, error)`
 Returns the last element matching a predicate.
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-lastEven, _ := numbers.LastOrNil(func(x int) (bool, error) {
+result, _ := slice.From([]int{1, 2, 3, 4, 5}).LastOrNil(func(x int) (bool, error) {
     return x%2 == 0, nil
-}) // *4
+})
+// result = *4
 ```
 
 ## Matching Operations
@@ -258,30 +305,30 @@ lastEven, _ := numbers.LastOrNil(func(x int) (bool, error) {
 Checks if any element matches the predicate.
 
 ```go
-numbers := slice.From([]int{1, 3, 5, 7})
-hasEven, _ := numbers.AnyMatch(func(x int) (bool, error) {
+result, _ := slice.From([]int{1, 3, 5, 7}).AnyMatch(func(x int) (bool, error) {
     return x%2 == 0, nil
-}) // false
+})
+// result = false
 ```
 
 ### `AllMatch(predicate func(elem T) (bool, error)) (bool, error)`
 Checks if all elements match the predicate.
 
 ```go
-numbers := slice.From([]int{2, 4, 6, 8})
-allEven, _ := numbers.AllMatch(func(x int) (bool, error) {
+result, _ := slice.From([]int{2, 4, 6, 8}).AllMatch(func(x int) (bool, error) {
     return x%2 == 0, nil
-}) // true
+})
+// result = true
 ```
 
 ### `NoneMatch(predicate func(elem T) (bool, error)) (bool, error)`
 Checks if no elements match the predicate.
 
 ```go
-numbers := slice.From([]int{1, 3, 5, 7})
-noneEven, _ := numbers.NoneMatch(func(x int) (bool, error) {
+result, _ := slice.From([]int{1, 3, 5, 7}).NoneMatch(func(x int) (bool, error) {
     return x%2 == 0, nil
-}) // true
+})
+// result = true
 ```
 
 ## Reduction Operations
@@ -290,20 +337,21 @@ noneEven, _ := numbers.NoneMatch(func(x int) (bool, error) {
 Reduces the stream to a single value. See [accumulator](stream/accumulator/README.md#1-batch-accumulator-accumulatort-any)
 
 ```go
-numbers := slice.From([]int{1, 2, 3, 4, 5})
-sum, _ := numbers.Reduce(accumulator.Sum)
-// sum = 15
+result, _ := slice.From([]int{1, 2, 3, 4, 5}).Reduce(accumulator.Sum)
+// result = 15
 ```
 
 ### `ForEach(consumer func(elem T) error) error`
 Executes a function for each element.
 
 ```go
-numbers := slice.From([]int{1, 2, 3})
-err := numbers.ForEach(func(x int) error {
+err := slice.From([]int{1, 2, 3}).ForEach(func(x int) error {
     fmt.Printf("Number: %d\n", x)
     return nil
 })
+if err != nil {
+	// handle error
+}
 // Prints: Number: 1, Number: 2, Number: 3
 ```
 
@@ -313,11 +361,11 @@ Unfortunately, Go does not allow something like `func (s *slice[T]) Map[R any](m
 ### `MapSlice[T, R any](s *slice[T], mapper func(elem T) (R, error))`
 Maps a slice to another type T -> R
 ```go
-numbers := EagerFrom([]int{1, 2, 3, 4, 5})
-result, err := MapSlice(numbers, func(elem int) (string, error) {
+numbers := slice.From([]int{1, 2, 3, 4, 5})
+result, _ := slice.MapSlice(numbers, func(elem int) (string, error) {
 	return "Number: " + string(rune('0'+elem)), nil
 }).ToSlice()
-// Result: ["Number: 1", "Number: 2", "Number: 3", "Number: 4", "Number: 5"]
+// result = ["Number: 1", "Number: 2", "Number: 3", "Number: 4", "Number: 5"]
 ```
 
 ### `ZipSlices[T1, T2 any](s1 *slice[T1], s2 *slice[T2])`
@@ -326,8 +374,8 @@ Combines two streams into tuples.
 ```go
 numbers := slice.From([]int{1, 2, 3})
 letters := slice.From([]string{"a", "b", "c"})
-zipped := stream.ZipSlices(numbers, letters)
-// Result: [(1,"a"), (2,"b"), (3,"c")]
+result, _ := slice.ZipSlices(numbers, letters).ToSlice()
+// result = [(1,"a"), (2,"b"), (3,"c")]
 ```
 
 ## Utility Operations
@@ -336,8 +384,43 @@ zipped := stream.ZipSlices(numbers, letters)
 Writes the stream as JSON to a writer.
 
 ```go
-numbers := slice.From([]int{1, 2, 3})
 var buf bytes.Buffer
-bytesWritten, err := numbers.Write(&buf)
+bytesWritten, _ := slice.From([]int{1, 2, 3}).Write(&buf)
 // buf contains: [1,2,3]
+```
+
+## Creating Maps
+
+### `FromMap[K common.Key, V any](m map[K]V)`
+Create a new stream from an existing map.
+
+```go
+slice.FromMap(map[string]int{
+	"a": 1,
+	"bb": 2,
+	"aaa": 3,
+})
+```
+
+### `FromMapWithSlices[K common.Key, V any](m map[K][]V)`
+Creates a new stream from an existing map with slices.
+
+```go
+slice.FromMapWithSlices(map[string][]string{
+	"a": {"apple", "apricot"},
+	"b": {"banana"},
+})
+```
+
+## Map Operations
+
+### `CountValues()`
+Returns a map contains the numbers of elements for each key.
+
+```go
+result, _ := slice.FromMapWithSlices(map[string][]string{
+	"a": {"apple", "apricot"},
+	"b": {"banana"},
+}).CountValues().toMap()
+// result = map["a": 2, "b": 1]
 ```
