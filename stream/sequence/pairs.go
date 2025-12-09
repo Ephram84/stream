@@ -25,6 +25,27 @@ func FromMap[K common.Key, V any](m map[K]V) *pairs[K, V] {
 	}
 }
 
+func (p *pairs[K, V]) Filter(predicate func(key K, value V) (bool, error)) *pairs[K, V] {
+	pairs := emptyPairs[K, V]()
+	if p.err != nil {
+		pairs.err = p.err
+		return pairs
+	}
+
+	for key, value := range p.m {
+		ok, err := predicate(key, value)
+		if err != nil {
+			pairs.err = err
+			return pairs
+		}
+		if ok {
+			pairs.m[key] = value
+		}
+	}
+
+	return pairs
+}
+
 func (p *pairs[K, V]) Flatten() *seq[V] {
 	arr := make([]V, 0)
 	if p.err != nil {

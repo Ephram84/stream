@@ -391,99 +391,311 @@ bytesWritten, _ := slice.From([]int{1, 2, 3}).Write(&buf)
 
 ## Creating Maps
 
+There are two types of map operations in the slice package:
+
+1. **Simple Maps** (`pairs[K, V]`) - Maps with single values: `map[K]V`
+2. **Maps with Slices** (`pairsSlice[K, V]`) - Maps with slice values: `map[K][]V`
+
 ### `FromMap[K common.Key, V any](m map[K]V)`
-Create a new stream from an existing map.
+Create a new stream from an existing map with single values.
 
 ```go
-slice.FromMap(map[string]int{
-	"a": 1,
-	"bb": 2,
-	"aaa": 3,
-})
+// Simple map: map[string]int
+simpleMap := map[string]int{
+    "a": 1,
+    "bb": 2,
+    "ccc": 3,
+}
+pairs := slice.FromMap(simpleMap)
 ```
 
 ### `FromMapWithSlices[K common.Key, V any](m map[K][]V)`
-Creates a new stream from an existing map with slices.
+Creates a new stream from an existing map with slice values.
 
 ```go
-slice.FromMapWithSlices(map[string][]string{
-	"a": {"apple", "apricot"},
-	"b": {"banana"},
-})
+// Map with slices: map[string][]string
+mapWithSlices := map[string][]string{
+    "a": {"apple", "apricot"},
+    "b": {"banana"},
+}
+pairsSlice := slice.FromMapWithSlices(mapWithSlices)
 ```
 
 ## Map Operations
 
-### `CountValues()`
-Returns a map contains the numbers of elements for each key.
+### Operations on Simple Maps (`pairs[K, V]`)
+
+### `Filter(predicate predicate func(key K, value V) (bool, error))`
+Filters each key-value pair based on a predicate.
+
+```go
+pairsMap := map[string]int{
+	"key1":  1,
+	"key2":  2,
+	"key3":  3,
+	"key11": 11,
+}
+
+result, _ := FromMap(pairsMap).Filter(func(key string, value int) (bool, error) {
+	return strings.HasSuffix(key, "1") && value > 10, nil
+}).ToMap()
+// result = map["key11", 11]
+```
+
+#### `Flatten()`
+Returns a slice of all values from the map.
+
+```go
+values, _ := slice.FromMap(map[string]int{
+    "a": 1,
+    "b": 2,
+    "c": 3,
+}).Flatten().ToSlice()
+// values = [1, 2, 3] (order may vary)
+```
+
+#### `Keys()`
+Returns a slice of all keys from the map.
+
+```go
+keys, _ := slice.FromMap(map[string]int{
+    "a": 1,
+    "b": 2,
+    "c": 3,
+}).Keys().ToSlice()
+// keys = ["a", "b", "c"] (order may vary)
+```
+
+#### `ToMap()`
+Converts the pairs back to a regular Go map.
+
+```go
+pairs := slice.FromMap(map[string]int{
+    "a": 1,
+    "b": 2,
+})
+result, _ := pairs.ToMap()
+// result = map["a": 1, "b": 2]
+```
+
+#### `Count()`
+Returns the number of key-value pairs in the map.
+
+```go
+count, _ := slice.FromMap(map[string]int{
+    "a": 1,
+    "b": 2,
+    "c": 3,
+}).Count()
+// count = 3
+```
+
+#### `ForEach(action func(key K, value V))`
+Executes a function for each key-value pair.
+
+```go
+pairs := slice.FromMap(map[string]int{
+    "a": 1,
+    "b": 2,
+    "c": 3,
+})
+err := pairs.ForEach(func(key string, value int) {
+    fmt.Printf("Key: %s, Value: %d\n", key, value)
+})
+// Prints each key-value pair (order may vary)
+```
+
+### Operations on Maps with Slices (`pairsSlice[K, V]`)
+
+#### `CountValues()`
+Returns a simple pairs map with the count of elements for each key.
 
 ```go
 result, _ := slice.FromMapWithSlices(map[string][]string{
-	"a": {"apple", "apricot"},
-	"b": {"banana"},
-}).CountValues().toMap()
-// result = map["a": 2, "b": 1]
+    "a": {"apple", "apricot", "avocado"},
+    "b": {"banana", "blueberry"},
+    "c": {"cherry"},
+}).CountValues().ToMap()
+// result = map["a": 3, "b": 2, "c": 1]
 ```
 
-### `Flatten()`
-Returns a slice of all values.
+#### `Flatten()`
+Returns a slice of all values from all slices.
 
 ```go
-result, _ := slice.FromMap(map[string]int{
-	"a": 1,
-	"b": 2,
-	"c": 3,
+values, _ := slice.FromMapWithSlices(map[string][]int{
+    "first":  {1, 2, 3},
+    "second": {4, 5},
+    "third":  {6},
 }).Flatten().ToSlice()
-// result = [1, 2, 3]
+// result = [1, 2, 3, 4, 5, 6] (order may vary)
 ```
+
+#### `Keys()`
+Returns a slice of all keys from the map.
+
+```go
+keys, _ := slice.FromMapWithSlices(map[string][]int{
+    "first":  {1, 2, 3},
+    "second": {4, 5},
+    "third":  {6},
+}).Keys().ToSlice()
+// keys = ["first", "second", "third"] (order may vary)
+```
+
+#### `MapToFloat64(mapper func(elem V) (float64, error))`
+Maps all values in all slices to float64.
 
 ```go
 result, _ := slice.FromMapWithSlices(map[string][]int{
-		"first":  {0, 1, 2},
-		"second": {3, 4, 5},
-		"third":  {6},
-	}).Flatten().ToSlice()
-// result = [0, 1, 2, 3, 4, 5, 6]
-```
-
-### `Keys()`
-Returns a slice of all keys.
-
-```go
-result, _ := FromMap(map[string]int{
-	"a": 1,
-	"b": 2,
-	"c": 3,
-}).Keys().ToSlice()
-// result = ["a", "b", "c"]
-```
-
-```go
-result, _ := FromMapWithSlices(map[string][]int{
-	"first":  {0, 1, 2},
-	"second": {3, 4, 5},
-	"third":  {6},
-}).Keys().ToSlice()
-// result = ["first", "second", "third"]
-```
-
-### `ToMap()`
-Converts the stream back to a regular Go map.
-
-```go
-result, _ := FromMap(map[string]int{
-	"a": 1,
-	"b": 2,
-	"c": 3,
+    "group1": {1, 2, 3},
+    "group2": {4, 5},
+}).MapToFloat64(func(x int) (float64, error) {
+    return float64(x) * 1.5, nil
 }).ToMap()
-// result = map["a": 1, "b": 2, "c": 3]
+// result = map["group1": [1.5, 3.0, 4.5], "group2": [6.0, 7.5]]
 ```
 
+#### `Reduce(accumulator accumulator.Accumulator[V])`
+Reduces each slice in the map to a single value, converting to a simple pairs map.
+Note: Uses batch accumulator (`Accumulator[V]`), not sequential (`AccumulatorSeq[V]`).
+
 ```go
-result, _ := FromMapWithSlices(map[string][]int{
-	"first":  {0, 1, 2},
-	"second": {3, 4, 5},
-	"third":  {6},
-}).ToMap()
-// result = map["first": {0, 1, 2}, "second": {3, 4, 5}, "third": {6}]
+result, _ := slice.FromMapWithSlices(map[string][]int{
+    "group1": {1, 2, 3},
+    "group2": {4, 5, 6},
+    "group3": {7, 8},
+}).Reduce(accumulator.Sum).ToMap()
+// result = map["group1": 6, "group2": 15, "group3": 15]
+```
+
+#### `ToMap()`
+Converts the pairsSlice back to a regular Go map with slices.
+
+```go
+pairsSlice := slice.FromMapWithSlices(map[string][]int{
+    "first":  {1, 2, 3},
+    "second": {4, 5, 6},
+})
+result, _ := pairsSlice.ToMap()
+// result = map["first": [1, 2, 3], "second": [4, 5, 6]]
+```
+
+#### `Count()`
+Returns the number of keys in the map.
+
+```go
+count, _ := slice.FromMapWithSlices(map[string][]int{
+    "first":  {1, 2, 3},
+    "second": {4, 5},
+}).Count()
+// count = 2
+```
+
+#### `ForEach(action func(key K, value []V))`
+Executes a function for each key-slice pair.
+
+```go
+pairsSlice := slice.FromMapWithSlices(map[string][]int{
+    "group1": {1, 2, 3},
+    "group2": {4, 5},
+})
+pairsSlice.ForEach(func(key string, values []int) {
+    fmt.Printf("Key: %s, Values: %v\n", key, values)
+})
+// Prints each key with its slice of values (order may vary)
+```
+
+## Complete Map Examples
+
+### Processing Simple Maps
+```go
+// Create a map of user scores
+scores := map[string]int{
+    "Alice": 95,
+    "Bob":   87,
+    "Carol": 92,
+}
+
+// Get all scores above 90
+pairs := slice.FromMap(scores)
+highScores, _ := pairs.Flatten().
+    Filter(func(score int) (bool, error) {
+        return score > 90, nil
+    }).
+    ToSlice()
+// highScores = [95, 92] (order may vary)
+
+// Get names of high scorers
+highScorerNames := make([]string, 0)
+pairs.ForEach(func(name string, score int) {
+    if score > 90 {
+        highScorerNames = append(highScorerNames, name)
+    }
+})
+// highScorerNames = ["Alice", "Carol"] (order may vary)
+```
+
+### Processing Maps with Slices
+```go
+// Create a map of students by grade
+studentsByGrade := map[string][]string{
+    "A": {"Alice", "Alex"},
+    "B": {"Bob", "Betty", "Ben"},
+    "C": {"Carol"},
+}
+
+// Count students in each grade
+pairsSlice := slice.FromMapWithSlices(studentsByGrade)
+counts := pairsSlice.CountValues()
+countMap, _ := counts.ToMap()
+// countMap = map["A": 2, "B": 3, "C": 1]
+
+// Get all student names
+allStudents, _ := pairsSlice.Flatten().ToSlice()
+// allStudents = ["Alice", "Alex", "Bob", "Betty", "Ben", "Carol"] (order may vary)
+
+// Get all grades
+grades, _ := pairsSlice.Keys().ToSlice()
+// grades = ["A", "B", "C"] (order may vary)
+```
+
+### Converting Between Map Types
+```go
+// Start with a map of slices
+groupedData := map[int][]int{
+    1: {10, 20, 30},
+    2: {40, 50},
+    3: {60, 70, 80, 90},
+}
+
+// Reduce each group to its sum
+pairsSlice := slice.FromMapWithSlices(groupedData)
+sums := pairsSlice.Reduce(accumulator.Sum)
+
+// Now we have a simple map
+sumMap, _ := sums.ToMap()
+// sumMap = map[1: 60, 2: 90, 3: 300]
+
+// Get the maximum sum
+maxSum, _ := sums.Flatten().Reduce(accumulator.Max)
+// maxSum = 300
+```
+
+### Chaining Map and Slice Operations
+```go
+// Start with a map of transaction amounts by category
+transactions := map[string][]float64{
+    "Food":      {12.50, 8.75, 15.00},
+    "Transport": {45.00, 23.50},
+    "Entertainment": {50.00, 30.00, 25.00},
+}
+
+// Calculate total spending per category, then find categories over 100
+pairsSlice := slice.FromMapWithSlices(transactions)
+highSpendingCategories, _ := pairsSlice.Reduce(accumulator.Sum)
+.Filter(func(key string, value float64) (bool, error) {
+	return value > 100, nil
+}).Keys().ToSlice()
+// highSpendingCategories might include "Entertainment" depending on totals
 ```

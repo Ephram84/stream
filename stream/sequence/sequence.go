@@ -102,19 +102,19 @@ func (s *seq[T]) Map(mapper func(elem T) (T, error)) *seq[T] {
 }
 
 func (s *seq[T]) MapToInt(mapper func(elem T) (int, error)) *seq[int] {
-	return MapSeq(s, mapper)
+	return Map(s, mapper)
 }
 
 func (s *seq[T]) MapToInt64(mapper func(elem T) (int64, error)) *seq[int64] {
-	return MapSeq(s, mapper)
+	return Map(s, mapper)
 }
 
 func (s *seq[T]) MapToFloat64(mapper func(elem T) (float64, error)) *seq[float64] {
-	return MapSeq(s, mapper)
+	return Map(s, mapper)
 }
 
 func (s *seq[T]) MapToString(mapper func(elem T) (string, error)) *seq[string] {
-	return MapSeq(s, mapper)
+	return Map(s, mapper)
 }
 
 func (s *seq[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSlice[bool, T] {
@@ -139,19 +139,19 @@ func (s *seq[T]) PartitioningBy(predicate func(elem T) (bool, error)) *pairsSlic
 }
 
 func (s *seq[T]) GroupByString(grouper func(elem T) (string, error)) *pairsSlice[string, T] {
-	return GroupBySeq(s, grouper)
+	return GroupBy(s, grouper)
 }
 
 func (s *seq[T]) GroupByInt(grouper func(elem T) (int, error)) *pairsSlice[int, T] {
-	return GroupBySeq(s, grouper)
+	return GroupBy(s, grouper)
 }
 
 func (s *seq[T]) GroupByInt64(grouper func(elem T) (int64, error)) *pairsSlice[int64, T] {
-	return GroupBySeq(s, grouper)
+	return GroupBy(s, grouper)
 }
 
 func (s *seq[T]) GroupByFloat(grouper func(elem T) (float64, error)) *pairsSlice[float64, T] {
-	return GroupBySeq(s, grouper)
+	return GroupBy(s, grouper)
 }
 
 func (s *seq[T]) AssociateByString(mapper func(elem T) (string, error)) *pairs[string, T] {
@@ -546,7 +546,7 @@ func (s *seq[T]) ForEach(consumer func(elem T) error) error {
 
 // free functions
 
-func MapSeq[T, R any](s *seq[T], mapper func(elem T) (R, error)) *seq[R] {
+func Map[T, R any](s *seq[T], mapper func(elem T) (R, error)) *seq[R] {
 	return &seq[R]{
 		next: func() (R, bool, error) {
 			var zero R
@@ -569,7 +569,7 @@ func MapSeq[T, R any](s *seq[T], mapper func(elem T) (R, error)) *seq[R] {
 	}
 }
 
-func FlatMapSeq[T, R any](s *seq[T], mapper func(elem T) (*seq[R], error)) *seq[R] {
+func FlatMap[T, R any](s *seq[T], mapper func(elem T) (*seq[R], error)) *seq[R] {
 	var currentSeq *seq[R]
 	var hasCurrent bool
 	return &seq[R]{
@@ -606,7 +606,7 @@ func FlatMapSeq[T, R any](s *seq[T], mapper func(elem T) (*seq[R], error)) *seq[
 	}
 }
 
-func ZipSeqs[T1, T2 any](seq1 *seq[T1], seq2 *seq[T2]) *seq[tupel.Tupel[T1, T2]] {
+func Zip[T1, T2 any](seq1 *seq[T1], seq2 *seq[T2]) *seq[tupel.Tupel[T1, T2]] {
 	return &seq[tupel.Tupel[T1, T2]]{
 		next: func() (tupel.Tupel[T1, T2], bool, error) {
 			if seq1 == nil || seq2 == nil {
@@ -629,7 +629,7 @@ func ZipSeqs[T1, T2 any](seq1 *seq[T1], seq2 *seq[T2]) *seq[tupel.Tupel[T1, T2]]
 	}
 }
 
-func GroupBySeq[K common.Key, T any](seq *seq[T], keyMapper func(elem T) (K, error)) *pairsSlice[K, T] {
+func GroupBy[K common.Key, T any](seq *seq[T], keyMapper func(elem T) (K, error)) *pairsSlice[K, T] {
 	result := emptyMapWithSlices[K, T]()
 	if seq == nil {
 		return result
