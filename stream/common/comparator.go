@@ -1,21 +1,22 @@
 package common
 
+// Eq checks if two comparable values are equal.
 func Eq[E comparable](a, b E) bool {
 	return a == b
 }
 
-func MaxInt(max, elem int) bool {
-	return max < elem
+// Min returns the smaller of two numeric values.
+func Min[T Numbers](a, b T) T {
+	if a < b {
+		return a
+	}
+	return b
 }
 
-func MinInt(min, elem int) bool {
-	return min > elem
-}
-
-func MaxFloat(max, elem float64) bool {
-	return max < elem
-}
-
-func MinFloat(min, elem float64) bool {
-	return min > elem
+// Max returns the larger of two numeric values.
+func Max[T Numbers](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
 }

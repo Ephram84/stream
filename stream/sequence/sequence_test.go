@@ -18,6 +18,11 @@ func mapper(s string) (string, error) {
 	return s, nil
 }
 
+type Account struct {
+	ID           string
+	Transactions []Transaction
+}
+
 type Transaction struct {
 	ID          string
 	Amount      float64
@@ -179,7 +184,7 @@ func TestConcat(t *testing.T) {
 
 func TestMap(t *testing.T) {
 	numbers := From([]int{1, 2, 3, 4, 5})
-	result, err := MapSeq(numbers, func(elem int) (string, error) {
+	result, err := Map(numbers, func(elem int) (string, error) {
 		return "Number: " + string(rune('0'+elem)), nil
 	}).ToSlice()
 	assert.NoError(t, err)
@@ -197,7 +202,7 @@ func TestMap2(t *testing.T) {
 
 func TestGroupBy(t *testing.T) {
 	numbers := From([]int{1, 2, 3, 4, 5, 6})
-	result := GroupBySeq(numbers, func(elem int) (string, error) {
+	result := GroupBy(numbers, func(elem int) (string, error) {
 		if elem%2 == 0 {
 			return "even", nil
 		}
@@ -210,32 +215,60 @@ func TestGroupBy(t *testing.T) {
 	assert.Equal(t, []int{2, 4, 6}, m["even"])
 }
 
-func TestFlatMap(t *testing.T) {
-	words := From([]string{"hi", "go"})
-
-	result, err := FlatMapSeq(words, func(elem string) (*seq[rune], error) {
-		return From([]rune(elem)), nil
-	}).ToSlice()
-	assert.NoError(t, err)
-	assert.Equal(t, []rune{'h', 'i', 'g', 'o'}, result)
-}
-
-func TestFlatMapSeqWithInts(t *testing.T) {
+func TestFlatMapWithInts(t *testing.T) {
 	intSlice := [][]int{
 		{1, 2, 3},
 		{4, 5, 6},
 		{7, 8, 9},
 	}
 
-	result, err := FlatMapSeq(From(intSlice), func(elem []int) (*seq[int], error) {
+	result, err := FlatMap(From(intSlice), func(elem []int) (*seq[int], error) {
 		return From(elem), nil
 	}).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3, 4, 5, 6, 7, 8, 9}, result)
 }
 
-func TestZipSequences(t *testing.T) {
-	result, err := ZipSeqs(From([]int{1, 2, 3}), From([]string{"a", "b", "c", "d"})).ToSlice()
+func TestFlatMap(t *testing.T) {
+	accounts := []Account{
+		{
+			Transactions: []Transaction{
+				{
+					ID:     "1",
+					Amount: 120.0,
+				},
+				{
+					ID:     "2",
+					Amount: -120.0,
+				},
+			},
+		},
+		{
+			Transactions: []Transaction{
+				{
+					ID:     "3",
+					Amount: 20.0,
+				},
+				{
+					ID:     "4",
+					Amount: 10.0,
+				},
+			},
+		},
+	}
+
+	numberOfTransactions, err := FlatMap(From(accounts), func(elem Account) (*seq[Transaction], error) {
+		seq := From(elem.Transactions)
+		return seq, nil
+	}).Filter(func(elem Transaction) (bool, error) {
+		return elem.Amount > 0.0, nil
+	}).Count()
+	assert.NoError(t, err)
+	assert.Equal(t, 3, numberOfTransactions)
+}
+
+func TestZip(t *testing.T) {
+	result, err := Zip(From([]int{1, 2, 3}), From([]string{"a", "b", "c", "d"})).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []tupel.Tupel[int, string]{
 		{First: 1, Second: "a"},

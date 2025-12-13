@@ -26,6 +26,18 @@ type Employee struct {
 	Salary float64
 }
 
+type Account struct {
+	ID           string
+	Transactions []Transaction
+}
+
+type Transaction struct {
+	ID          string
+	Amount      float64
+	BookingDate int64
+	Tags        []string
+}
+
 var sliceEmployee = []Employee{
 	{
 		ID:     1,
@@ -179,7 +191,7 @@ func TestFlatMapInts(t *testing.T) {
 		{7, 8, 9},
 	}
 
-	ints, err := FlatMapSlice(From(intSlice), func(elem []int) ([]int, error) {
+	ints, err := FlatMap(From(intSlice), func(elem []int) ([]int, error) {
 		return elem, nil
 	}).ToSlice()
 	assert.NoError(t, err)
@@ -214,7 +226,7 @@ func TestFlatMap(t *testing.T) {
 		},
 	}
 
-	numberOfTransactions, err := FlatMapSlice(From(accounts), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMap(From(accounts), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
@@ -226,25 +238,13 @@ func TestFlatMap(t *testing.T) {
 func TestFlatMapWithEmptyAccounts(t *testing.T) {
 	accounts := []Account{}
 
-	numberOfTransactions, err := FlatMapSlice(From(accounts), func(elem Account) ([]Transaction, error) {
+	numberOfTransactions, err := FlatMap(From(accounts), func(elem Account) ([]Transaction, error) {
 		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
 	}).Count()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, numberOfTransactions)
-}
-
-type Account struct {
-	ID           string
-	Transactions []Transaction
-}
-
-type Transaction struct {
-	ID          string
-	Amount      float64
-	BookingDate int64
-	Tags        []string
 }
 
 func TestSort(t *testing.T) {
@@ -446,14 +446,14 @@ func TestAssociateByString(t *testing.T) {
 	}, result)
 }
 
-func TestConcatSlices(t *testing.T) {
+func TestConcat(t *testing.T) {
 	result, err := From([]int{4, 5}).Concat(From([]int{6, 7, 8})).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{4, 5, 6, 7, 8}, result)
 }
 
-func TestZipSlices(t *testing.T) {
-	result, err := ZipSlices(From([]int{1, 2, 3}), From([]string{"a", "b", "c", "d"})).ToSlice()
+func TestZip(t *testing.T) {
+	result, err := Zip(From([]int{1, 2, 3}), From([]string{"a", "b", "c", "d"})).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []tupel.Tupel[int, string]{
 		{First: 1, Second: "a"},
@@ -462,9 +462,9 @@ func TestZipSlices(t *testing.T) {
 	}, result)
 }
 
-func TestGroupBySlice(t *testing.T) {
+func TestGroupBy2(t *testing.T) {
 	numbers := From([]int{1, 2, 3, 4, 5, 6})
-	result := GroupBySlice(numbers, func(elem int) (string, error) {
+	result := GroupBy(numbers, func(elem int) (string, error) {
 		if elem%2 == 0 {
 			return "even", nil
 		}
@@ -477,7 +477,7 @@ func TestGroupBySlice(t *testing.T) {
 	assert.Equal(t, []int{2, 4, 6}, m["even"])
 }
 
-func TestTakeSlice(t *testing.T) {
+func TestTake(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).
 		Take(3).
 		ToSlice()
@@ -485,7 +485,7 @@ func TestTakeSlice(t *testing.T) {
 	assert.Equal(t, []int{1, 2, 3}, result)
 }
 
-func TestSkipSlice(t *testing.T) {
+func TestSkip(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).
 		Skip(2).
 		ToSlice()
@@ -493,7 +493,7 @@ func TestSkipSlice(t *testing.T) {
 	assert.Equal(t, []int{3, 4, 5}, result)
 }
 
-func TestReverseSlice(t *testing.T) {
+func TestReverse(t *testing.T) {
 	result, err := From([]int{1, 2, 3, 4, 5}).
 		Reverse().
 		ToSlice()

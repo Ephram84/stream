@@ -5,11 +5,15 @@ import (
 	"github.com/Ephram84/stream/stream/common"
 )
 
+// pairsSlice represents a map with slice values (map[K][]V) using lazy evaluation.
+// Operations are performed on-demand when iterating through the sequence.
 type pairsSlice[K common.Key, V any] struct {
 	m   map[K][]V
 	err error
 }
 
+// FromMapWithSlices creates a new pairsSlice from an existing map with slice values.
+// The map is stored internally and can be processed using various lazy operations.
 func FromMapWithSlices[K common.Key, V any](m map[K][]V) *pairsSlice[K, V] {
 	return &pairsSlice[K, V]{
 		m:   m,
@@ -24,6 +28,8 @@ func emptyMapWithSlices[K common.Key, V any]() *pairsSlice[K, V] {
 	}
 }
 
+// CountValues returns a simple pairs map containing the count of elements for each key.
+// Converts map[K][]V to map[K]int where the int is the length of each slice.
 func (p pairsSlice[K, V]) CountValues() *pairs[K, int] {
 	newPairs := emptyPairs[K, int]()
 
@@ -39,6 +45,8 @@ func (p pairsSlice[K, V]) CountValues() *pairs[K, int] {
 	return newPairs
 }
 
+// Flatten returns a lazy sequence containing all values from all slices in the map.
+// The order of elements is not guaranteed due to map iteration.
 func (p *pairsSlice[K, V]) Flatten() *seq[V] {
 	arr := make([]V, 0)
 	if p.err != nil {
@@ -52,6 +60,8 @@ func (p *pairsSlice[K, V]) Flatten() *seq[V] {
 	return From(arr, nil)
 }
 
+// Keys returns a lazy sequence containing all keys from the map.
+// The order of keys is not guaranteed due to map iteration.
 func (p *pairsSlice[K, V]) Keys() *seq[K] {
 	s := make([]K, len(p.m))
 	if p.err != nil {
@@ -67,6 +77,8 @@ func (p *pairsSlice[K, V]) Keys() *seq[K] {
 	return From(s, nil)
 }
 
+// MapToFloat64 transforms all values in all slices to float64 using the provided mapper function.
+// Returns a new pairsSlice with float64 values while preserving the map structure.
 func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *pairsSlice[K, float64] {
 	pairsSlice := emptyMapWithSlices[K, float64]()
 	if pairsSlice.err != nil {
@@ -91,6 +103,9 @@ func (p *pairsSlice[K, V]) MapToFloat64(mapper func(elem V) (float64, error)) *p
 	return pairsSlice
 }
 
+// Reduce applies a sequential accumulator to each slice in the map, converting it to a single value.
+// Returns a simple pairs map (map[K]V) where each key maps to the reduced value of its slice.
+// Uses sequential accumulation (AccumulatorSeq) which processes elements one by one with an index.
 func (p *pairsSlice[K, V]) Reduce(acc accumulator.AccumulatorSeq[V]) *pairs[K, V] {
 	pairs := emptyPairs[K, V]()
 	if pairs.err != nil {
@@ -121,6 +136,7 @@ func (p *pairsSlice[K, V]) Reduce(acc accumulator.AccumulatorSeq[V]) *pairs[K, V
 	return pairs
 }
 
+// ToMap converts the pairsSlice back to a regular Go map with slice values.
 func (p *pairsSlice[K, V]) ToMap() (map[K][]V, error) {
 	if p.err != nil {
 		return nil, p.err
@@ -135,6 +151,7 @@ func (p *pairsSlice[K, V]) ToMap() (map[K][]V, error) {
 	return m, nil
 }
 
+// Count returns the number of keys in the map.
 func (p *pairsSlice[K, V]) Count() (int, error) {
 	if p.err != nil {
 		return 0, p.err
@@ -143,6 +160,8 @@ func (p *pairsSlice[K, V]) Count() (int, error) {
 	return len(p.m), nil
 }
 
+// ForEach executes the provided action function for each key-slice pair in the map.
+// Returns the pairsSlice for method chaining.
 func (p *pairsSlice[K, V]) ForEach(action func(key K, value []V)) *pairsSlice[K, V] {
 	if p.err != nil {
 		return p
