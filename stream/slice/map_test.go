@@ -24,7 +24,7 @@ func TestFlatten(t *testing.T) {
 		"third":  {6},
 	}).Flatten().ToSlice()
 	assert.NoError(t, err)
-	assert.Equal(t, []int{0, 1, 2, 3, 4, 5, 6}, ints)
+	assert.ElementsMatch(t, []int{0, 1, 2, 3, 4, 5, 6}, ints)
 }
 
 func TestKeys(t *testing.T) {
