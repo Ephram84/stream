@@ -26,8 +26,13 @@ go get github.com/Ephram84/stream
 
 This package provides two complementary approaches for data processing:
 
-- [Eager Processing](stream/slice/README.md)
-- [Lazy Processing](stream/sequence/README.md)
+- [Eager Processing](stream/slice/README.md) - Immediate evaluation with in-memory slices
+- [Lazy Processing](stream/sequence/README.md) - On-demand evaluation with iterators
+
+### Supporting Packages
+
+- [Accumulator](stream/accumulator/README.md) - Reduction operations for aggregating values
+- [Iterator](stream/Iterator/README.md) - Lazy sequence generation for numeric types
 
 ## Complete Example
 
