@@ -222,8 +222,8 @@ func TestFlatMapWithInts(t *testing.T) {
 		{7, 8, 9},
 	}
 
-	result, err := FlatMap(From(intSlice), func(elem []int) (*seq[int], error) {
-		return From(elem), nil
+	result, err := FlatMap(From(intSlice), func(elem []int) ([]int, error) {
+		return elem, nil
 	}).ToSlice()
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3, 4, 5, 6, 7, 8, 9}, result)
@@ -257,14 +257,17 @@ func TestFlatMap(t *testing.T) {
 		},
 	}
 
-	numberOfTransactions, err := FlatMap(From(accounts), func(elem Account) (*seq[Transaction], error) {
-		seq := From(elem.Transactions)
-		return seq, nil
+	transactions, err := FlatMap(From(accounts), func(elem Account) ([]Transaction, error) {
+		return elem.Transactions, nil
 	}).Filter(func(elem Transaction) (bool, error) {
 		return elem.Amount > 0.0, nil
-	}).Count()
+	}).ToSlice()
 	assert.NoError(t, err)
-	assert.Equal(t, 3, numberOfTransactions)
+	assert.Equal(t, []Transaction{
+		{ID: "1", Amount: 120.0},
+		{ID: "3", Amount: 20.0},
+		{ID: "4", Amount: 10.0},
+	}, transactions)
 }
 
 func TestZip(t *testing.T) {

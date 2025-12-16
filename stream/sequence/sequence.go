@@ -632,11 +632,11 @@ func Map[T, R any](s *seq[T], mapper func(elem T) (R, error)) *seq[R] {
 	}
 }
 
-// FlatMap transforms each element to a sequence and flattens the results lazily.
+// FlatMap transforms each element to a slice and flattens the results lazily.
 // Useful for expanding nested structures into a single flat sequence.
-func FlatMap[T, R any](s *seq[T], mapper func(elem T) (*seq[R], error)) *seq[R] {
-	var currentSeq *seq[R]
-	var hasCurrent bool
+func FlatMap[T, R any](s *seq[T], mapper func(elem T) ([]R, error)) *seq[R] {
+	var currentSlice []R
+	var currentIndex int
 	return &seq[R]{
 		next: func() (R, bool, error) {
 			if s == nil {
@@ -644,12 +644,10 @@ func FlatMap[T, R any](s *seq[T], mapper func(elem T) (*seq[R], error)) *seq[R] 
 				return zero, false, nil
 			}
 			for {
-				if hasCurrent {
-					val, ok, _ := currentSeq.next()
-					if ok {
-						return val, true, nil
-					}
-					hasCurrent = false
+				if currentIndex < len(currentSlice) {
+					val := currentSlice[currentIndex]
+					currentIndex++
+					return val, true, nil
 				}
 				val, ok, err := s.next()
 				if err != nil {
@@ -660,12 +658,12 @@ func FlatMap[T, R any](s *seq[T], mapper func(elem T) (*seq[R], error)) *seq[R] 
 					var zero R
 					return zero, false, nil
 				}
-				currentSeq, err = mapper(val)
+				currentSlice, err = mapper(val)
 				if err != nil {
 					var zero R
 					return zero, false, err
 				}
-				hasCurrent = true
+				currentIndex = 0
 			}
 		},
 	}

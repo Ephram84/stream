@@ -48,6 +48,11 @@ squared := numbers.Map(func(x int) (int, error) {
 result, _ := squared.ToSlice() // [1, 4, 9, 16]
 ```
 
+```go
+result, _ := sequence.From([]string{"hello", "world"}).Map(common.ToUpperCase).ToSlice()
+// result = ["HELLO", "WORLD"}
+```
+
 ### `MapToInt(mapper func(elem T) (int, error))`
 Maps elements to integers (lazy evaluation).
 
@@ -90,17 +95,6 @@ strings := numbers.MapToString(func(x int) (string, error) {
     return fmt.Sprintf("num_%d", x), nil
 })
 result, _ := strings.ToSlice() // ["num_1", "num_2", "num_3"]
-```
-
-### `FlatMapSeq[T, R any](s *seq[T], mapper func(elem T) (*seq[R], error))`
-Flattens nested sequences (lazy evaluation).
-
-```go
-words := sequence.From([]string{"hello", "world"}, nil)
-chars := sequence.FlatMapSeq(words, func(s string) (*sequence.seq[string], error) {
-    return sequence.From(strings.Split(s, ""), nil), nil
-})
-result, _ := chars.ToSlice() // ["h", "e", "l", "l", "o", "w", "o", "r", "l", "d"]
 ```
 
 ## Slicing Operations
@@ -368,11 +362,36 @@ Maps a sequence to another type T -> R (lazy evaluation).
 
 ```go
 numbers := sequence.From([]int{1, 2, 3, 4, 5}, nil)
-result, err := sequence.MapSeq(numbers, func(elem int) (string, error) {
+result, err := sequence.Map(numbers, func(elem int) (string, error) {
     return "Number: " + strconv.Itoa(elem), nil
 }).ToSlice()
 // Result: ["Number: 1", "Number: 2", "Number: 3", "Number: 4", "Number: 5"]
 ```
+
+### `FlatMap[T1, T2 any](s *seq[T1], mapper func(elem T1) ([]T2, error))`
+Flattens nested sequence.
+
+```go
+words := sequence.From([]string{"hello", "world"})
+result, _ := sequence.FlatMap(words, func(s string) ([]string, error) {
+    return strings.Split(s, ""), nil
+}).ToSlice()
+// result = ["h", "e", "l", "l", "o", "w", "o", "r", "l", "d"]
+```
+
+```go
+    intSlice := [][]int{
+		{1, 2, 3},
+		{4, 5, 6},
+		{7, 8, 9},
+	}
+
+	result, _ := sequence.FlatMap(sequence.From(intSlice), func(elem []int) ([]int, error) {
+		return elem, nil
+	}).ToSlice()
+    // result = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+```
+
 
 ### `Zip[T1, T2 any](seq1 *seq[T1], seq2 *seq[T2])`
 Combines two sequences into tuples (lazy evaluation).
@@ -380,7 +399,7 @@ Combines two sequences into tuples (lazy evaluation).
 ```go
 numbers := sequence.From([]int{1, 2, 3}, nil)
 letters := sequence.From([]string{"a", "b", "c"}, nil)
-zipped := sequence.ZipSeqs(numbers, letters)
+zipped := sequence.Zip(numbers, letters)
 // Result: [(1,"a"), (2,"b"), (3,"c")]
 ```
 
@@ -389,7 +408,7 @@ Groups sequence elements by a key (evaluates the entire sequence).
 
 ```go
 words := sequence.From([]string{"apple", "banana", "apricot"}, nil)
-grouped := sequence.GroupBySeq(words, func(s string) (string, error) {
+grouped := sequence.GroupBy(words, func(s string) (string, error) {
     return string(s[0]), nil
 })
 result, _ := grouped.ToMap()
