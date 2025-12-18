@@ -60,6 +60,98 @@ func main() {
 }
 ```
 
+## Performance Benchmarks
+
+Performance comparison between eager (`slice`) and lazy (`sequence`) evaluation. All benchmarks run on Intel Pentium Gold 8505.
+
+### 🚀 Performance Comparison (Lower is Better)
+
+#### Filter Operation - Time (ns/op)
+```
+Small (100 elements)
+  Slice    █████████████████████████ 1,239 ns
+  Sequence ████████████████████████  1,141 ns  🏆 8% faster
+
+Medium (10K elements)
+  Slice    ████████████████████████████████████████████████████ 101,786 ns
+  Sequence ████████████████████████████████████████████████     96,048 ns  🏆 6% faster
+
+Large (1M elements)
+  Slice    ████████████████████████████████████████████████████ 11,862,396 ns
+  Sequence ███████████████████████████████████████████          9,376,324 ns  🏆 21% faster
+```
+
+#### Map Operation - Time (ns/op)
+```
+Small (100 elements)
+  Slice    ████████████████████ 1,104 ns  🏆
+  Sequence ████████████████████████████ 1,547 ns
+
+Medium (10K elements)
+  Slice    ████████████████████████████ 84,930 ns  🏆
+  Sequence ████████████████████████████████████████████████████ 148,608 ns
+
+Large (1M elements)
+  Slice    ███████████████████████████████ 8,965,579 ns  🏆
+  Sequence ████████████████████████████████████████████████████ 15,122,503 ns
+```
+
+#### Chained Operations (Filter → Map → Reduce) - Time (ns/op)
+```
+Small (100 elements)
+  Slice    ████████████████████████████ 1,401 ns
+  Sequence ███████████████████          947 ns  🏆 32% faster
+
+Medium (10K elements)
+  Slice    ████████████████████████████████████████████████████ 119,342 ns
+  Sequence ███████████████████████████                           64,412 ns  🏆 46% faster
+
+Large (1M elements)
+  Slice    ████████████████████████████████████████████████████ 12,580,187 ns
+  Sequence ██████████████████████████                            6,532,707 ns  🏆 48% faster
+```
+
+### 💾 Memory Efficiency (Lower is Better)
+
+#### Filter Operation - Memory (Bytes/op)
+```
+Small (100 elements)
+  Slice    ████████████████████████████████████████████████████ 2,424 B
+  Sequence █████████████████████████                             1,152 B  💚 52% less
+
+Medium (10K elements)
+  Slice    ████████████████████████████████████████████████████ 251,225 B
+  Sequence █████████████████████████                            128,384 B  💚 49% less
+
+Large (1M elements)
+  Slice    ████████████████████████████████████████████████████ 33,092,984 B
+  Sequence █████████████████████████████████                    21,083,593 B  💚 36% less
+```
+
+#### Chained Operations (Filter → Map → Reduce) - Memory (Bytes/op)
+```
+Small (100 elements)
+  Slice    ████████████████████████████████████████████████████ 2,472 B
+  Sequence ▏                                                        176 B  💚 93% less
+
+Medium (10K elements)
+  Slice    ████████████████████████████████████████████████████ 251,273 B
+  Sequence ▏                                                        176 B  💚 99.9% less
+
+Large (1M elements)
+  Slice    ████████████████████████████████████████████████████ 33,093,027 B
+  Sequence ▏                                                           176 B  💚 99.9% less
+```
+
+### 📊 Key Insights
+
+- **🎯 Single Operations**: Eager evaluation (`slice`) is typically faster for isolated operations like Map and Reduce
+- **⚡ Chained Operations**: Lazy evaluation (`sequence`) significantly outperforms eager evaluation when chaining multiple operations
+- **💾 Memory Efficiency**: Lazy evaluation uses dramatically less memory, especially for chained operations (up to 99.9% less!)
+  - **Important**: Chained operations ending in `Reduce()` use less memory than single `Filter().ToSlice()` because `Reduce()` doesn't materialize intermediate results - it only keeps the accumulated value!
+  - `ToSlice()` must allocate memory for all result elements, while `Reduce()` only needs memory for the final aggregated value
+- **📊 Best Practice**: Use `slice` for simple transformations, `sequence` for complex pipelines and large datasets
+
 ## Documentation
 
 The main functions and methods are documented in GoDoc comments in the code. More examples and tests can be found in the respective `*_test.go` files.
