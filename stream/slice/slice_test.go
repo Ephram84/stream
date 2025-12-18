@@ -126,6 +126,12 @@ func TestMapToFloat(t *testing.T) {
 	assert.Equal(t, []float64{100000.0, 200000.0, 300000.0}, salaries)
 }
 
+func TestMapToUpperCase(t *testing.T) {
+	result, err := From([]string{"hello", "world"}).Map(common.ToUpperCase).ToSlice()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"HELLO", "WORLD"}, result)
+}
+
 func TestPartitionBy(t *testing.T) {
 	numbers := []int{2, 4, 5, 6, 8}
 

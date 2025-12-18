@@ -55,6 +55,11 @@ result, _ := slice.From([]int{1, 2, 3, 4}).Map(func(x int) (int, error) {
 // result = [1, 4, 9, 16]
 ```
 
+```go
+result, _ := From([]string{"hello", "world"}).Map(common.ToUpperCase).ToSlice()
+// result = ["HELLO", "WORLD"}
+```
+
 ### `MapToInt(mapper func(elem T) (int, error))`
 Maps elements to integers.
 
@@ -71,30 +76,6 @@ Maps elements to strings.
 ```go
 result, _ := slice.From([]int{1, 2, 3}).MapToString(common.IntToString).ToSlice()
 // result = ["1", "2", "3"]
-```
-
-### `FlatMapSlice[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error))`
-Flattens nested slices.
-
-```go
-words := slice.From([]string{"hello", "world"})
-result, _ := slice.FlatMapSlice(words, func(s string) ([]string, error) {
-    return strings.Split(s, ""), nil
-}).ToSlice()
-// result = ["h", "e", "l", "l", "o", "w", "o", "r", "l", "d"]
-```
-
-```go
-    intSlice := [][]int{
-		{1, 2, 3},
-		{4, 5, 6},
-		{7, 8, 9},
-	}
-
-	result, _ := FlatMapSlice(From(intSlice), func(elem []int) ([]int, error) {
-		return elem, nil
-	}).ToSlice()
-    // result = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 ## Ordering Operations
@@ -366,6 +347,30 @@ result, _ := slice.Map(numbers, func(elem int) (string, error) {
 	return "Number: " + string(rune('0'+elem)), nil
 }).ToSlice()
 // result = ["Number: 1", "Number: 2", "Number: 3", "Number: 4", "Number: 5"]
+```
+
+### `FlatMap[T1, T2 any](s *slice[T1], mapper func(elem T1) ([]T2, error))`
+Flattens nested slices.
+
+```go
+words := slice.From([]string{"hello", "world"})
+result, _ := slice.FlatMap(words, func(s string) ([]string, error) {
+    return strings.Split(s, ""), nil
+}).ToSlice()
+// result = ["h", "e", "l", "l", "o", "w", "o", "r", "l", "d"]
+```
+
+```go
+    intSlice := [][]int{
+		{1, 2, 3},
+		{4, 5, 6},
+		{7, 8, 9},
+	}
+
+	result, _ := slice.FlatMap(slice.From(intSlice), func(elem []int) ([]int, error) {
+		return elem, nil
+	}).ToSlice()
+    // result = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 ### `Zip[T1, T2 any](s1 *slice[T1], s2 *slice[T2])`

@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // StringToInt converts a string to an int.
@@ -31,4 +32,14 @@ func FloatToString(elem float64) (string, error) {
 // IntToFloat64 converts an int to a float64.
 func IntToFloat64(elem int) (float64, error) {
 	return float64(elem), nil
+}
+
+// ToUpperCase converts a string to uppercase.
+func ToUpperCase(s string) (string, error) {
+	return strings.ToUpper(s), nil
+}
+
+// ToLowerCase converts a string to lowercase.
+func ToLowerCase(s string) (string, error) {
+	return strings.ToLower(s), nil
 }
