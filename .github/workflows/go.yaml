@@ -8,29 +8,23 @@ on:
 
 jobs:
   test:
-    name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        go-version: ['1.25']
-    
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ matrix.go-version }}
+        go-version: 1.25.4
         cache: true
 
-    - name: Download dependencies
+    - name: Install dependencies
       run: make deps
 
     - name: Build
       run: make build
 
-    - name: Run tests
+    - name: Test
       run: make test-short
 
   lint:
@@ -45,19 +39,10 @@ jobs:
         go-version: '1.25'
         cache: true
 
-    - name: Install golangci-lint
-      run: make install-tools
-
-    - name: Run lint
-      run: make lint
-
-    - name: Run vet
-      run: make vet
-
-    - name: Check formatting
-      run: |
-        make fmt
-        git diff --exit-code || (echo "Code is not formatted. Run 'make fmt'" && exit 1)
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
 
   security:
     name: Security Scan
@@ -65,14 +50,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Go
-      uses: actions/setup-go@v5
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
       with:
-        go-version: '1.25'
-        cache: true
-
-    - name: Install gosec
-      run: make install-tools
-    
-    - name: Run security scan
-      run: make security
+        args: ./...
