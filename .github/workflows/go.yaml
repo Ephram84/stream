@@ -7,20 +7,72 @@ on:
     branches: [ master ]
 
 jobs:
-
-  build:
-    runs-on: ubuntu-latest
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go-version: ['1.25']
+    
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v5
       with:
-        go-version: 1.25.4
+        go-version: ${{ matrix.go-version }}
         cache: true
 
-    - name: Install dependencies
-      run: go get ./...
+    - name: Download dependencies
+      run: make deps
 
-    - name: Test
-      run: go test -v -short ./...
+    - name: Build
+      run: make build
+
+    - name: Run tests
+      run: make test-short
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
+
+    - name: Install golangci-lint
+      run: make install-tools
+
+    - name: Run lint
+      run: make lint
+
+    - name: Run vet
+      run: make vet
+
+    - name: Check formatting
+      run: |
+        make fmt
+        git diff --exit-code || (echo "Code is not formatted. Run 'make fmt'" && exit 1)
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
+
+    - name: Install gosec
+      run: make install-tools
+    
+    - name: Run security scan
+      run: make security
