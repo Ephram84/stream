@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Ephram84/stream/stream/accumulator"
-	"github.com/Ephram84/stream/stream/common"
-	"github.com/Ephram84/stream/stream/tupel"
+	"github.com/Ephram84/stream/accumulator"
+	"github.com/Ephram84/stream/common"
+	"github.com/Ephram84/stream/tupel"
 	"github.com/stretchr/testify/assert"
 )
 

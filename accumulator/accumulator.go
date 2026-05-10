@@ -1,6 +1,6 @@
 package accumulator
 
-import "github.com/Ephram84/stream/stream/common"
+import "github.com/Ephram84/stream/common"
 
 // Accumulator is a function type that takes a slice of values and reduces them to a single value.
 // It returns the accumulated result and an error if the operation fails.

@@ -3,7 +3,7 @@ package sequence
 import (
 	"maps"
 
-	"github.com/Ephram84/stream/stream/common"
+	"github.com/Ephram84/stream/common"
 )
 
 // pairs represents a simple map with single values (map[K]V) using lazy evaluation.
