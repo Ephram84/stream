@@ -11,9 +11,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Ephram84/stream/stream/accumulator"
-	"github.com/Ephram84/stream/stream/common"
-	"github.com/Ephram84/stream/stream/tupel"
+	"github.com/Ephram84/stream/accumulator"
+	"github.com/Ephram84/stream/common"
+	"github.com/Ephram84/stream/tupel"
 )
 
 // slice represents an eagerly evaluated stream of elements.

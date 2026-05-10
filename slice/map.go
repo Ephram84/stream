@@ -3,8 +3,8 @@ package slice
 import (
 	"maps"
 
-	"github.com/Ephram84/stream/stream/accumulator"
-	"github.com/Ephram84/stream/stream/common"
+	"github.com/Ephram84/stream/accumulator"
+	"github.com/Ephram84/stream/common"
 )
 
 // pairsSlice represents a map with slice values (map[K][]V).

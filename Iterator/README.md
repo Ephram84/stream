@@ -183,7 +183,7 @@ result := iter.Generate()
 ### Combining with Slice Operations
 ```go
 // Generate sequence and then apply slice operations
-import "github.com/Ephram84/stream/stream/slice"
+import "github.com/Ephram84/stream/slice"
 
 numbers := iterator.Iterator(1, iterator.IncrementInt()).
     WithLimit(100).

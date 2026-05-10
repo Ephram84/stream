@@ -3,7 +3,7 @@
 package iterator
 
 import (
-	"github.com/Ephram84/stream/stream/common"
+	"github.com/Ephram84/stream/common"
 )
 
 // NextFunc is a function type that generates the next value in a sequence

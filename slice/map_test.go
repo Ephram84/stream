@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Ephram84/stream/stream/accumulator"
+	"github.com/Ephram84/stream/accumulator"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWords(t *testing.T) {
-	words, err := FromFile("../../assets/words.txt").GroupByString(mapper).CountValues().ToMap()
+	words, err := FromFile("../assets/words.txt").GroupByString(mapper).CountValues().ToMap()
 	assert.NoError(t, err)
 
 	assert.Equal(t, 110, words["a"])
