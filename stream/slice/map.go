@@ -1,6 +1,8 @@
 package slice
 
 import (
+	"maps"
+
 	"github.com/Ephram84/stream/stream/accumulator"
 	"github.com/Ephram84/stream/stream/common"
 )
@@ -142,9 +144,7 @@ func (p *pairsSlice[K, V]) ToMap() (map[K][]V, error) {
 
 	m := make(map[K][]V)
 
-	for key, values := range p.m {
-		m[key] = values
-	}
+	maps.Copy(m, p.m)
 
 	return m, nil
 }

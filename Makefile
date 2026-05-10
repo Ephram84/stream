@@ -1,4 +1,4 @@
-.PHONY: test test-short build fmt vet lint security clean install deps
+.PHONY: test test-short build fmt vet lint clean install deps vulncheck fix tidy
 
 # Run all tests
 test:
@@ -29,6 +29,14 @@ deps:
 # Tidy dependencies
 tidy:
 	go mod tidy
+
+# Check for vulnerabilities
+vulncheck:
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+	govulncheck ./...
+
+fix:
+	go fix ./...
 
 # Clean build artifacts
 clean:
